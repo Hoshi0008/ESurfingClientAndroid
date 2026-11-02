@@ -23,13 +23,15 @@ import com.esurfing.client.service.AuthService;
 import com.esurfing.client.service.NetInfo;
 import com.esurfing.client.service.ServiceState;
 
+import java.util.Locale;
+
 /**
  * 主界面。
  *
  * <ul>
  *     <li>首次使用（或 user/passwd 为空）：两个输入框 + 居中的「确认」；</li>
  *     <li>未启动服务：红色「未启动服务」+ 黄色圆角「启动」；</li>
- *     <li>运行中：绿色「服务运行中」+ 下方 hh:mm:ss 的启动时间 + 「重新启动服务」。</li>
+ *     <li>运行中：绿色「服务运行中」+ 下方实时的运行时长（hh:mm:ss）+「停止服务」。</li>
  * </ul>
  */
 public final class MainPage implements Page {
@@ -46,6 +48,21 @@ public final class MainPage implements Page {
     private String stateKey = "";
     private EditText userBox;
     private EditText passBox;
+
+    /** 运行时长控件与每秒走针。 */
+    private TextView elapsed;
+    private boolean visible;
+    private boolean tickerRunning;
+    private final Runnable ticker = new Runnable() {
+        @Override
+        public void run() {
+            if (!tickerRunning) {
+                return;
+            }
+            updateElapsed();
+            act.handler.postDelayed(this, 1000);
+        }
+    };
 
     public MainPage(MainActivity act) {
         this.act = act;
@@ -151,12 +168,14 @@ public final class MainPage implements Page {
 
     @Override
     public void onShow() {
+        visible = true;
         refresh();
     }
 
     @Override
     public void onHide() {
-        // 主界面不需要在后台刷新
+        visible = false;
+        syncTicker();
     }
 
     // ------------------------------------------------------------------ 刷新
@@ -176,6 +195,7 @@ public final class MainPage implements Page {
         rebuildInfo(c, running);
         rebuildKeep(c);
         updateChip(c);
+        syncTicker();
     }
 
     private void updateChip(Config c) {
@@ -198,6 +218,7 @@ public final class MainPage implements Page {
         statusCard.removeAllViews();
         userBox = null;
         passBox = null;
+        elapsed = null;
         int pad = Ui.dp(act, 22);
         statusCard.setPadding(pad, Ui.dp(act, 30), pad, Ui.dp(act, 28));
         statusCard.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -288,36 +309,65 @@ public final class MainPage implements Page {
     private void buildRunning() {
         statusCard.addView(statusRow("服务运行中", t.green, 27f));
 
+        // 运行时长（每秒刷新），而不是启动时刻
         LinearLayout timeRow = new LinearLayout(act);
         timeRow.setOrientation(LinearLayout.HORIZONTAL);
         timeRow.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams trLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         trLp.topMargin = Ui.dp(act, 12);
-        TextView pre = Ui.text(act, "服务启动时间 ", 13f, t.sub, false);
-        TextView time = Ui.mono(act, Ui.hms(ServiceState.startTime), 15f, t.txt, true);
-        time.setLetterSpacing(0.06f);
+        TextView pre = Ui.text(act, "服务运行时长 ", 13f, t.sub, false);
+        elapsed = Ui.mono(act,
+                formatDuration(System.currentTimeMillis() - ServiceState.startTime),
+                15f, t.txt, true);
+        elapsed.setLetterSpacing(0.06f);
         timeRow.addView(pre);
-        timeRow.addView(time);
+        timeRow.addView(elapsed);
         statusCard.addView(timeRow, trLp);
 
-        Pill restart = new Pill(act, t, "重新启动服务", Pill.PRIMARY);
+        Pill stop = new Pill(act, t, "停止服务", Pill.DANGER);
         LinearLayout wrap = new LinearLayout(act);
         wrap.setGravity(Gravity.CENTER_HORIZONTAL);
-        wrap.addView(restart, new LinearLayout.LayoutParams(
+        wrap.addView(stop, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, Ui.dp(act, 50)));
         LinearLayout.LayoutParams wrapLp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         wrapLp.topMargin = Ui.dp(act, 22);
         statusCard.addView(wrap, wrapLp);
-        restart.setOnClickListener(v -> {
+        stop.setOnClickListener(v -> confirmStop());
+        stop.setOnLongClickListener(v -> {
+            // 长按仍然可以就地重新启动（不常用，但省得先去停止再启动）
             AuthService.start(act, AuthService.ACTION_RESTART);
             FloatToast.show(act, "正在重新启动服务");
-        });
-        restart.setOnLongClickListener(v -> {
-            confirmStop();
             return true;
         });
+        syncTicker();
+    }
+
+    /** 时:分:秒，小时位不封顶。 */
+    private static String formatDuration(long millis) {
+        long total = Math.max(0L, millis) / 1000L;
+        return String.format(Locale.US, "%02d:%02d:%02d",
+                total / 3600, (total % 3600) / 60, total % 60);
+    }
+
+    private void updateElapsed() {
+        if (elapsed != null && ServiceState.running) {
+            elapsed.setText(formatDuration(System.currentTimeMillis() - ServiceState.startTime));
+        }
+    }
+
+    /** 运行时长每秒走一格；页面不可见或服务停了就停表。 */
+    private void syncTicker() {
+        boolean should = visible && ServiceState.running && elapsed != null;
+        if (should && !tickerRunning) {
+            tickerRunning = true;
+            updateElapsed();
+            act.handler.postDelayed(ticker, 1000);
+        } else if (!should && tickerRunning) {
+            tickerRunning = false;
+            act.handler.removeCallbacks(ticker);
+        }
     }
 
     private void confirmStop() {

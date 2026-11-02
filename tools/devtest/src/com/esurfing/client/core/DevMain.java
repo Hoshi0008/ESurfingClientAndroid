@@ -27,12 +27,44 @@ public final class DevMain {
             System.exit(failed == 0 ? 0 : 1);
         } else if ("interop".equals(mode)) {
             interop(args);
+        } else if ("redirect".equals(mode)) {
+            redirect(args);
         } else if ("config".equals(mode)) {
             config(new File(args[1]));
         } else {
             System.out.println("unknown mode " + mode);
             System.exit(2);
         }
+    }
+
+    /**
+     * 校验「外网被劫持到哪个门户」的判定逻辑：
+     * 跳到不带 wlanuserip 的门户 = eIA；跳到带 wlanuserip 的是天翼 BRAS 门户，不算 eIA。
+     */
+    private static void redirect(String[] args) {
+        String base = "http://" + args[1] + ":" + args[2];
+        Portal p = new Portal("127.0.0.1", "02:11:22:33:44:55", "android", "", "", "", 7001);
+
+        String eia = p.detectPortalRedirect(new String[]{base + "/portal-redirect"});
+        System.out.println("eIA 门户 -> " + eia);
+        String bras = p.detectPortalRedirect(new String[]{base + "/bras-redirect"});
+        System.out.println("BRAS 门户 -> \"" + bras + "\"");
+        String none = p.detectPortalRedirect(new String[]{base + "/"});
+        System.out.println("正常外网 -> \"" + none + "\"");
+
+        if (!"http://10.99.0.1/eia/login".equals(eia)) {
+            System.out.println("[FAIL] 没识别出 eIA 门户");
+            System.exit(1);
+        }
+        if (!bras.isEmpty()) {
+            System.out.println("[FAIL] 把 BRAS 门户误判成 eIA 门户");
+            System.exit(1);
+        }
+        if (!none.isEmpty()) {
+            System.out.println("[FAIL] 正常页面不应判定为门户");
+            System.exit(1);
+        }
+        System.out.println("eIA 判定逻辑通过");
     }
 
     private static void interop(String[] args) throws Exception {

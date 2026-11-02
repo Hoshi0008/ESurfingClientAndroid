@@ -413,7 +413,57 @@ public class AuthService extends Service {
         portal = p;
         setPhase("已在线");
 
+        // 服务跑起来之后真连一次外网：能通就是 campus，被劫到别的门户多半是 eIA
+        checkReachability(p, net);
+
         keepLoop(p, netCheck);
+    }
+
+    /**
+     * 认证成功后做一次互联网连通性判断，用来区分「校园网 campus」和「学校 eIA 准入网」。
+     *
+     * <p>eIA 的特征：地址落在 {@code eia_net}，或者任意 HTTP 请求都被劫持到一个
+     * 不带 {@code wlanuserip} 的门户上。判定为 eIA 时把门户地址发布到
+     * {@link ServiceState#eiaPortal}，由前台界面尝试用默认浏览器打开。</p>
+     */
+    private void checkReachability(Portal p, NetInfo net) {
+        Config cfg = config;
+        String eiaNet = cfg.get("eia_net").trim();
+        String portalUrl = cfg.get("eia_portal").trim();
+        boolean inEia = !eiaNet.isEmpty() && net.ipv4 != null
+                && IpUtil.anyCidrContains(eiaNet, net.ipv4);
+
+        boolean online = p.probeOnline();
+        ServiceState.online = online;
+        if (online) {
+            if (inEia) {
+                logWarn("外网可达，但地址 " + net.ipv4 + " 仍落在 eIA 网段 " + eiaNet + "，请留意");
+            } else {
+                logOk("外网连通测试通过，当前是校园网（campus）");
+                setPhase("已在线");
+            }
+            ServiceState.clearEia();
+            return;
+        }
+
+        String redirect = p.detectPortalRedirect();
+        if (!inEia && redirect.isEmpty()) {
+            logStep("外网暂时不可达，也没有被劫持到别的门户；继续心跳，稍后再测");
+            return;
+        }
+
+        if (portalUrl.isEmpty()) {
+            portalUrl = redirect;
+        }
+        if (portalUrl.isEmpty()) {
+            logWarn("判断为学校 eIA 准入网，但没有门户地址：请在设置里填写 eia_portal");
+            setPhase("需要 eIA 认证");
+            return;
+        }
+        logWarn("判断为学校 eIA 准入网（本机 MAC 可能还没登记），需要用浏览器完成首次认证");
+        logWarn("尝试用默认浏览器打开：" + portalUrl);
+        setPhase("需要 eIA 认证");
+        ServiceState.setEiaPortal(portalUrl);
     }
 
     private void keepLoop(Portal p, int netCheck) {

@@ -157,7 +157,7 @@ public final class SettingsPage implements Page {
         }
     }
 
-    /** 字段值的展示形式：密码只显示掩码。 */
+    /** 字段值的展示形式：密码只显示掩码，枚举值显示中文名。 */
     private String display(Config.Field f, String raw) {
         if ("passwd".equals(f.key)) {
             if (raw.isEmpty()) {
@@ -170,7 +170,7 @@ public final class SettingsPage implements Page {
             }
             return sb.toString();
         }
-        return raw.isEmpty() ? "（空）" : raw;
+        return raw.isEmpty() ? "（空）" : f.display(raw);
     }
 
     // ------------------------------------------------------------------ 修改弹窗
@@ -178,34 +178,42 @@ public final class SettingsPage implements Page {
     private void openEdit(Config.Field f) {
         final Config c = App.get().config();
         final String current = c.get(f.key);
-        StringBuilder hint = new StringBuilder(f.hint);
+
+        FrostDialog dialog = new FrostDialog(act)
+                .title("修改" + f.key);
+
         if (f.options != null) {
-            hint.append("（可选值：").append(TextUtils.join(" / ", f.options)).append("）");
+            // 枚举字段用下拉选择，避免手输出错
+            StringBuilder hint = new StringBuilder(f.hint);
+            if (f.labels != null) {
+                hint.append("（可选：").append(TextUtils.join(" / ", f.labels)).append("）");
+            }
+            int index = f.indexOf(current);
+            dialog.hint(hint.toString())
+                    .select(f.options, f.labels, index < 0 ? 0 : index);
+        } else {
+            dialog.hint(f.hint)
+                    .input(current, "passwd".equals(f.key));
         }
-        new FrostDialog(act)
-                .title("修改" + f.key)
-                .hint(hint.toString())
-                .input(current, "passwd".equals(f.key))
-                .positive("保存", dialog -> {
-                    String value = dialog.text().trim();
-                    String error = f.validate(value);
-                    if (error != null) {
-                        FloatToast.show(act, error);
-                        return false;
-                    }
-                    c.set(f.key, value);
-                    if (!c.save()) {
-                        FloatToast.show(act, "写入配置文件失败");
-                        return false;
-                    }
-                    refreshValues();
-                    FloatToast.show(act, "重启服务后生效");
-                    if ("theme".equals(f.key)) {
-                        act.recreateAfterThemeChange();
-                    }
-                    return true;
-                })
-                .negative("取消", null)
-                .show();
+
+        dialog.positive("保存", d -> {
+            String value = d.text().trim();
+            String error = f.validate(value);
+            if (error != null) {
+                FloatToast.show(act, error);
+                return false;
+            }
+            c.set(f.key, value);
+            if (!c.save()) {
+                FloatToast.show(act, "写入配置文件失败");
+                return false;
+            }
+            refreshValues();
+            FloatToast.show(act, "重启服务后生效");
+            if ("theme".equals(f.key)) {
+                act.recreateAfterThemeChange();
+            }
+            return true;
+        }).negative("取消", null).show();
     }
 }

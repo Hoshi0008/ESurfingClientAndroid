@@ -72,7 +72,11 @@ public class MainActivity extends Activity {
         if (pages[PAGE_MAIN] instanceof MainPage) {
             ((MainPage) pages[PAGE_MAIN]).refresh();
         }
+        maybeOpenEiaPortal();
     });
+
+    /** 已经为哪个门户地址拉起过浏览器，避免重复弹。 */
+    private String openedEiaPortal = "";
 
     // ------------------------------------------------------------------ 生命周期
 
@@ -180,6 +184,7 @@ public class MainActivity extends Activity {
             ensure(PAGE_MAIN);
         }
         ((MainPage) pages[PAGE_MAIN]).refresh();
+        maybeOpenEiaPortal();
     }
 
     @Override
@@ -405,6 +410,39 @@ public class MainActivity extends Activity {
     /** 保存设置后如果是主题变更，就地重建界面。 */
     public void recreateAfterThemeChange() {
         handler.postDelayed(this::recreate, 520);
+    }
+
+    /**
+     * 后端判定连到了学校 eIA 准入网时，用默认浏览器打开它的首次认证门户。
+     *
+     * <p>只在地址较新（2 分钟内）时打开，避免用户切回来时突然弹浏览器。</p>
+     */
+    private void maybeOpenEiaPortal() {
+        String url = ServiceState.eiaPortal;
+        if (url == null || url.isEmpty()) {
+            openedEiaPortal = "";
+            return;
+        }
+        if (url.equals(openedEiaPortal)) {
+            return;
+        }
+        if (System.currentTimeMillis() - ServiceState.eiaPortalAt > 120_000L) {
+            return;
+        }
+        openedEiaPortal = url;
+        openInBrowser(url);
+    }
+
+    /** 用系统默认浏览器打开地址（失败就提示）。 */
+    public void openInBrowser(String url) {
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            startActivity(intent);
+            FloatToast.show(this, "已打开门户，请先在浏览器里完成认证");
+        } catch (RuntimeException e) {
+            FloatToast.show(this, "打开浏览器失败：" + url);
+        }
     }
 
     @Override

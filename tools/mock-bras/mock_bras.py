@@ -109,6 +109,15 @@ class Handler(BaseHTTPRequestHandler):
         if path in ("/generate_204", "/gen_204"):
             self._send(204)
             return
+        if path == "/portal-redirect":
+            # 模拟被劫持到学校 eIA 门户（不带 wlanuserip）
+            self._send(302, b"", extra={"Location": "http://10.99.0.1/eia/login"})
+            return
+        if path == "/bras-redirect":
+            # 模拟被劫持到天翼 BRAS 门户（带 wlanuserip）
+            self._send(302, b"", extra={
+                "Location": "http://10.1.1.1:7001/index.cgi?wlanuserip=10.0.2.15&wlanacip=10.1.1.1"})
+            return
         if path == "/index.cgi":
             self._send(200, self._index_html().encode())
             return

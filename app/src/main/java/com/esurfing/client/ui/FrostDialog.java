@@ -16,6 +16,8 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import com.esurfing.client.R;
+
 /**
  * 磨砂圆角弹窗：背后是当前界面的高斯模糊快照，卡片半透明、圆角、带描边，
  * 出现时从 0.86 缩放弹出，消失时反向收回。
@@ -41,6 +43,15 @@ public final class FrostDialog implements MainActivity.Overlay {
     private String[] subs;
     private int selected = -1;
     private int preselectIndex = -1;
+
+    /** 下拉选择形态。 */
+    private String[] selectOptions;
+    private String[] selectLabels;
+    private int selectIndex = -1;
+    private TextView selectValueView;
+    private LinearLayout dropPanel;
+    private LinearLayout dropBox;
+    private boolean dropOpen;
 
     private String titleText;
     private String hintText;
@@ -93,6 +104,14 @@ public final class FrostDialog implements MainActivity.Overlay {
         return this;
     }
 
+    /** 下拉选择形态：点开后在原地展开选项列表。labels 可为 null（直接显示原值）。 */
+    public FrostDialog select(String[] options, String[] optionLabels, int index) {
+        selectOptions = options;
+        selectLabels = optionLabels;
+        selectIndex = index;
+        return this;
+    }
+
     public FrostDialog positive(String label, Action a) {
         positiveLabel = label;
         positive = a;
@@ -106,6 +125,10 @@ public final class FrostDialog implements MainActivity.Overlay {
     }
 
     public String text() {
+        if (selectOptions != null) {
+            return selectIndex >= 0 && selectIndex < selectOptions.length
+                    ? selectOptions[selectIndex] : "";
+        }
         return input == null ? "" : input.getText().toString();
     }
 
@@ -195,6 +218,9 @@ public final class FrostDialog implements MainActivity.Overlay {
         if (hasInput) {
             buildInput();
         }
+        if (selectOptions != null) {
+            buildSelect();
+        }
         if (labels != null) {
             buildList();
         }
@@ -234,6 +260,105 @@ public final class FrostDialog implements MainActivity.Overlay {
             input.requestFocus();
             imm.showSoftInput(input, InputMethodManager.SHOW_IMPLICIT);
         }
+    }
+
+    // ------------------------------------------------------------------ 下拉选择
+
+    private void buildSelect() {
+        LinearLayout trigger = new LinearLayout(act);
+        trigger.setOrientation(LinearLayout.HORIZONTAL);
+        trigger.setGravity(Gravity.CENTER_VERTICAL);
+        trigger.setBackground(Ui.round(act, t.inputBg, 15, t.inputStroke, 1));
+        trigger.setPadding(Ui.dp(act, 16), 0, Ui.dp(act, 14), 0);
+        trigger.setClickable(true);
+        trigger.setFocusable(true);
+
+        selectValueView = Ui.text(act, selectLabel(selectIndex), 15f, t.txt, false);
+        trigger.addView(selectValueView, new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        ImageView chevron = Ui.icon(act, R.drawable.ic_chevron_down, t.muted, 18);
+        trigger.addView(chevron, new LinearLayout.LayoutParams(
+                Ui.dp(act, 18), Ui.dp(act, 18)));
+        LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, Ui.dp(act, 50));
+        tlp.topMargin = Ui.dp(act, 18);
+        card.addView(trigger, tlp);
+        trigger.setOnClickListener(v -> toggleDrop());
+
+        dropPanel = new LinearLayout(act);
+        dropPanel.setOrientation(LinearLayout.VERTICAL);
+        dropPanel.setBackground(Ui.round(act, t.inputBg, 14, t.inputStroke, 1));
+        dropPanel.setElevation(Ui.dpf(act, 6));
+        dropPanel.setPadding(Ui.dp(act, 6), Ui.dp(act, 6), Ui.dp(act, 6), Ui.dp(act, 6));
+        dropPanel.setVisibility(View.GONE);
+        buildDropRows();
+        LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        dlp.topMargin = Ui.dp(act, 8);
+        card.addView(dropPanel, dlp);
+    }
+
+    private void buildDropRows() {
+        dropPanel.removeAllViews();
+        for (int i = 0; i < selectOptions.length; i++) {
+            final int index = i;
+            boolean on = index == selectIndex;
+            LinearLayout row = new LinearLayout(act);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setPadding(Ui.dp(act, 12), Ui.dp(act, 11), Ui.dp(act, 12), Ui.dp(act, 11));
+            row.setBackground(Ui.round(act, on ? t.accentSoft : 0x00000000, 12, 0, 0));
+            TextView label = Ui.text(act, selectLabel(index), 14f, t.txt, on);
+            row.addView(label, new LinearLayout.LayoutParams(
+                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            Dot check = new Dot(act, t.accent1);
+            check.setVisibility(on ? View.VISIBLE : View.INVISIBLE);
+            row.addView(check);
+            row.setOnClickListener(v -> {
+                selectIndex = index;
+                selectValueView.setText(selectLabel(selectIndex));
+                buildDropRows();
+                closeDrop();
+            });
+            LinearLayout.LayoutParams rlp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            if (i > 0) {
+                rlp.topMargin = Ui.dp(act, 2);
+            }
+            dropPanel.addView(row, rlp);
+        }
+    }
+
+    private String selectLabel(int index) {
+        if (index < 0 || index >= selectOptions.length) {
+            return "";
+        }
+        if (selectLabels != null && index < selectLabels.length) {
+            return selectLabels[index];
+        }
+        return selectOptions[index];
+    }
+
+    private void toggleDrop() {
+        if (dropOpen) {
+            closeDrop();
+            return;
+        }
+        dropOpen = true;
+        dropPanel.setVisibility(View.VISIBLE);
+        dropPanel.setAlpha(0f);
+        dropPanel.setTranslationY(-Ui.dp(act, 6));
+        dropPanel.animate().alpha(1f).translationY(0f).setDuration(170)
+                .setInterpolator(new DecelerateInterpolator(1.6f)).start();
+    }
+
+    private void closeDrop() {
+        if (!dropOpen || dropPanel == null) {
+            return;
+        }
+        dropOpen = false;
+        dropPanel.animate().alpha(0f).translationY(-Ui.dp(act, 4)).setDuration(130)
+                .withEndAction(() -> dropPanel.setVisibility(View.GONE)).start();
     }
 
     private void buildList() {

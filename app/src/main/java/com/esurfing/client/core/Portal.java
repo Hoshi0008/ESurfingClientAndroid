@@ -263,6 +263,38 @@ public final class Portal {
         return false;
     }
 
+    /**
+     * 探测 HTTP 请求被劫持到哪个门户。
+     *
+     * <p>返回的是<b>不是</b> BRAS 门户（不带 {@code wlanuserip}）的跳转地址——
+     * 那种门户基本可以判定为学校自己的 eIA 准入门户，而不是天翼的认证门户。</p>
+     *
+     * @return 跳转地址；没有跳转或者跳到 BRAS 门户时返回 ""
+     */
+    public String detectPortalRedirect() {
+        return detectPortalRedirect(DETECT_URLS);
+    }
+
+    /** 同上，但用调用方给的探测地址（便于用 mock 门户做单元验证）。 */
+    public String detectPortalRedirect(String[] urls) {
+        if (urls == null) {
+            return "";
+        }
+        for (String url : urls) {
+            try {
+                Http.Response r = Http.request("GET", url, null, uaHeaders(), localIp, 6000);
+                String loc = r.header("location");
+                if (loc != null && loc.startsWith("http") && !loc.contains("wlanuserip")) {
+                    note(Log.P_STEP, "探测到门户劫持：" + url + " -> " + loc);
+                    return loc;
+                }
+            } catch (IOException ignored) {
+                // 换下一个
+            }
+        }
+        return "";
+    }
+
     // ------------------------------------------------------------------ 配置
 
     /** 按服务器 + AC 地址拼出四个接口地址。 */

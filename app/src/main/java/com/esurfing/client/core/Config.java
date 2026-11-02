@@ -29,6 +29,8 @@ public final class Config {
         public final String def;
         public final String hint;
         public final String[] options;
+        /** 可选项的显示名（与 {@link #options} 一一对应，可为 null 表示直接显示原值）。 */
+        public String[] labels;
 
         Field(String key, String label, String def, String hint, String... options) {
             this.key = key;
@@ -36,6 +38,38 @@ public final class Config {
             this.def = def;
             this.hint = hint;
             this.options = options == null || options.length == 0 ? null : options;
+        }
+
+        /** 给字段挂上中文显示名（下拉框与设置行都用它）。 */
+        Field labels(String... names) {
+            this.labels = names;
+            return this;
+        }
+
+        /** 某个取值该显示成什么。 */
+        public String display(String value) {
+            if (options == null || labels == null) {
+                return value;
+            }
+            for (int i = 0; i < options.length && i < labels.length; i++) {
+                if (options[i].equalsIgnoreCase(value)) {
+                    return labels[i];
+                }
+            }
+            return value;
+        }
+
+        /** 某个取值在 options 里的下标，找不到返回 -1。 */
+        public int indexOf(String value) {
+            if (options == null) {
+                return -1;
+            }
+            for (int i = 0; i < options.length; i++) {
+                if (options[i].equalsIgnoreCase(value == null ? "" : value.trim())) {
+                    return i;
+                }
+            }
+            return -1;
         }
 
         /** 校验用户输入；返回 null 表示合法，否则返回错误提示。 */
@@ -129,13 +163,13 @@ public final class Config {
         SCHEMA.add(new Field("interval_min", "心跳下限", "20", "单位秒，服务端给的间隔不会低于它"));
         SCHEMA.add(new Field("net_check", "外网校验", "300", "单位秒；0 = 关闭"));
         SCHEMA.add(new Field("force", "强制认证", "false", "探测到已在线也重新认证",
-                "false", "true"));
+                "false", "true").labels("关闭", "开启"));
         SCHEMA.add(new Field("mac", "上报MAC", "", "留空则每次随机生成（服务端不校验真伪）"));
         SCHEMA.add(new Field("ssid", "校园WiFi", "", "仅作记录，便于确认连的是哪张网"));
         SCHEMA.add(new Field("theme", "主题", "auto", "深色 / 浅色 / 跟随系统",
-                "auto", "light", "dark"));
+                "auto", "light", "dark").labels("跟随系统", "浅色", "深色"));
         SCHEMA.add(new Field("auto_start", "开机自启", "true", "开机后自动启动认证服务",
-                "true", "false"));
+                "true", "false").labels("开启", "关闭"));
     }
 
     private final File file;

@@ -12,6 +12,7 @@ public final class Pill extends TextView {
     public static final int YELLOW = 1;
     public static final int GHOST = 2;
     public static final int TONAL = 3;
+    public static final int DANGER = 4;
 
     public Pill(Context c, Theme t, CharSequence text, int style) {
         super(c);
@@ -42,6 +43,12 @@ public final class Pill extends TextView {
             case TONAL:
                 setTextColor(t.accent1);
                 setBackground(Ui.round(getContext(), t.accentSoft, 50, 0, 0));
+                break;
+            case DANGER:
+                // 危险动作：红字 + 淡红底，深浅两套主题都保证对比度
+                setTextColor(t.red);
+                setBackground(Ui.round(getContext(), Ui.alpha(t.red, 0.15f), 999,
+                        Ui.alpha(t.red, 0.3f), 1));
                 break;
             default:
                 setTextColor(t.onAccent);
