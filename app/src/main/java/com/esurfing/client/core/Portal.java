@@ -1,6 +1,8 @@
 package com.esurfing.client.core;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -9,6 +11,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 
 /**
  * 广东天翼校园网 Portal 认证协议实现（cdc-http-pap）。
@@ -253,7 +258,7 @@ public final class Portal {
 
     /** 一次外网连通性探测的完整结果，供日志把「测了什么、结果是什么」写清楚。 */
     public static final class Probe {
-        /** 是否真的连上了外网。 */
+        /** 是否真的连上了外网（HTTP 与 HTTPS 都通才算）。 */
         public boolean online;
         /** 命中的探测地址。 */
         public String url = "";
@@ -265,14 +270,22 @@ public final class Portal {
         public String error = "";
         /** 跳转目标不像 BRAS 门户（更像学校 eIA 门户）。 */
         public boolean eiaLike;
+        /** HTTPS（TLS）是否真的握手成功；门户劫持时这里是 false。 */
+        public boolean httpsOk;
+        /** HTTPS 的结果说明。 */
+        public String httpsDetail = "";
+        /** HTTP 看起来通了但 HTTPS 不通 = 仍然被门户拦着，不能算在线。 */
+        public boolean intercepted;
 
         /** 一行摘要，写进日志用。 */
         public String summary() {
             if (online) {
-                return "在线（" + url + " 返回 " + status + "）";
+                return "在线（" + url + " 返回 " + status + "，HTTPS 正常）";
             }
             StringBuilder sb = new StringBuilder("不在线");
-            if (!redirect.isEmpty()) {
+            if (intercepted) {
+                sb.append("（HTTP 通了但 HTTPS 失败：").append(httpsDetail).append("）");
+            } else if (!redirect.isEmpty()) {
                 sb.append("（被跳转到 ").append(redirect).append("）");
             } else if (!error.isEmpty()) {
                 sb.append("（").append(error).append("）");
@@ -281,11 +294,15 @@ public final class Portal {
         }
     }
 
+    /** HTTPS 用来验证「是不是真的放行了」的地址。 */
+    private static final String[] TLS_HOSTS = {"www.baidu.com", "www.qq.com"};
+
     /**
      * 逐个探测外网地址，并把每次请求的结果写进日志。
      *
-     * <p>判定：204，或 200 且没有跳转，就算已放行；302 到不带 {@code wlanuserip}
-     * 的门户则记为疑似 eIA 门户。</p>
+     * <p>判定分两步：先看 HTTP（204，或 200 且没有跳转），再用 TLS 真握手一次。
+     * 只测 HTTP 会被门户骗过去——很多准入门户放行 {@code generate_204} 却劫持 443，
+     * 表现就是浏览器报 {@code ERR_SSL_VERSION_OR_CIPHER_MISMATCH}。</p>
      */
     public Probe probe() {
         Probe result = new Probe();
@@ -298,16 +315,23 @@ public final class Portal {
                 boolean ok = r.status == 204
                         || (r.status == 200 && (loc == null || !loc.startsWith("http")));
                 if (ok) {
-                    result.online = true;
                     result.url = url;
                     result.status = r.status;
+                    // HTTP 看起来通了，再用 TLS 确认一次（这一步才是"真能上网"的证据）
+                    checkTls(result);
+                    result.online = result.httpsOk;
+                    if (!result.online) {
+                        result.intercepted = true;
+                        result.error = "HTTPS 握手失败，疑似仍被门户拦截";
+                        result.eiaLike = true;
+                    }
                     return result;
                 }
                 if (loc != null && loc.startsWith("http")) {
                     result.redirect = loc;
                     result.status = r.status;
                     result.url = url;
-                    if (!loc.contains("wlanuserip")) {
+                    if (!loc.contains("wlanuserip") && looksLikePortal(loc)) {
                         result.eiaLike = true;
                         note(Log.P_WARN, "外网请求被劫持到非 BRAS 门户：" + loc);
                     }
@@ -318,6 +342,43 @@ public final class Portal {
             }
         }
         return result;
+    }
+
+    /** 对一个知名站点做 TLS 握手；失败通常意味着 443 被门户劫持。 */
+    private void checkTls(Probe result) {
+        StringBuilder detail = new StringBuilder();
+        for (String host : TLS_HOSTS) {
+            Socket socket = new Socket();
+            try {
+                if (binder != null) {
+                    binder.bind(socket);
+                } else if (localIp != null && !localIp.trim().isEmpty()) {
+                    socket.bind(new InetSocketAddress(localIp.trim(), 0));
+                }
+                socket.connect(new InetSocketAddress(host, 443), 6000);
+                socket.setSoTimeout(6000);
+                SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+                SSLSocket ssl = (SSLSocket) factory.createSocket(socket, host, 443, true);
+                ssl.startHandshake();
+                String protocol = ssl.getSession() == null ? "" : ssl.getSession().getProtocol();
+                ssl.close();
+                result.httpsOk = true;
+                result.httpsDetail = host + " TLS " + protocol + " 握手成功";
+                note(Log.P_INFO, "外网探测 HTTPS " + result.httpsDetail);
+                return;
+            } catch (IOException | RuntimeException e) {
+                detail.append(detail.length() == 0 ? "" : "；")
+                        .append(host).append(" 失败: ").append(e.getMessage());
+                note(Log.P_WARN, "外网探测 HTTPS " + host + " 失败: " + e);
+                try {
+                    socket.close();
+                } catch (IOException ignored) {
+                    // ignore
+                }
+            }
+        }
+        result.httpsOk = false;
+        result.httpsDetail = detail.length() == 0 ? "TLS 握手失败" : detail.toString();
     }
 
     /** 是否已在线（能拿到 204 / 正常网页说明放行）。 */
@@ -346,7 +407,8 @@ public final class Portal {
             try {
                 Http.Response r = Http.request("GET", url, null, uaHeaders(), localIp, 6000, binder);
                 String loc = r.header("location");
-                if (loc != null && loc.startsWith("http") && !loc.contains("wlanuserip")) {
+                if (loc != null && loc.startsWith("http") && !loc.contains("wlanuserip")
+                        && looksLikePortal(loc)) {
                     note(Log.P_STEP, "探测到门户劫持：" + url + " -> " + loc);
                     return loc;
                 }
@@ -355,6 +417,36 @@ public final class Portal {
             }
         }
         return "";
+    }
+
+    /**
+     * 判断一个跳转地址像不像「认证门户」。
+     *
+     * <p>只认局域网地址（校园门户基本都是内网 IP）或者不像普通网站域名的地址；
+     * 像百度的 {@code http → https://m.baidu.com/} 这种正常跳转不能被当成门户，
+     * 否则会拿它去开浏览器，把用户带到无关页面。</p>
+     */
+    public static boolean looksLikePortal(String url) {
+        if (url == null) {
+            return false;
+        }
+        String host = hostOf(url);
+        if (host.isEmpty()) {
+            return false;
+        }
+        if ("localhost".equalsIgnoreCase(host)) {
+            return true;
+        }
+        if (IpUtil.isIpv4(host)) {
+            return IpUtil.cidrContains("10.0.0.0/8", host)
+                    || IpUtil.cidrContains("172.16.0.0/12", host)
+                    || IpUtil.cidrContains("192.168.0.0/16", host)
+                    || IpUtil.cidrContains("169.254.0.0/16", host)
+                    || IpUtil.cidrContains("100.64.0.0/10", host);
+        }
+        String lower = host.toLowerCase(Locale.US);
+        return !lower.contains("baidu.com") && !lower.contains("qq.com")
+                && !lower.contains("miui.com") && !lower.contains("google.com");
     }
 
     // ------------------------------------------------------------------ 配置

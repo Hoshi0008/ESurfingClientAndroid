@@ -436,11 +436,13 @@ public class AuthService extends Service {
     }
 
     /**
-     * 认证成功后做一次互联网连通性判断，用来区分「校园网 campus」和「学校 eIA 准入网」。
+     * 认证成功后做一次互联网连通性判断，用来区分「真的放行了」和「还卡在门户后面」。
      *
-     * <p>eIA 的特征：地址落在 {@code eia_net}，或者任意 HTTP 请求都被劫持到一个
-     * 不带 {@code wlanuserip} 的门户上。判定为 eIA 时把门户地址发布到
-     * {@link ServiceState#eiaPortal}，由前台界面尝试用默认浏览器打开。</p>
+     * <p>只看 HTTP 会被门户骗：不少准入门户放行 {@code generate_204} 但劫持 443，
+     * 浏览器就报 {@code ERR_SSL_VERSION_OR_CIPHER_MISMATCH}。所以
+     * {@link Portal#probe()} 会再真握手一次 TLS，只有握手成功才算在线。
+     * 判定为需要门户认证（eIA 网段 / 被劫持 / TLS 失败）时，把门户地址发布到
+     * {@link ServiceState#portalUrl}，由前台界面用默认浏览器打开。</p>
      */
     private void checkReachability(Portal p, NetInfo net) {
         Config cfg = config;
@@ -451,6 +453,12 @@ public class AuthService extends Service {
 
         logInfo("开始外网连通测试（认证已受理）");
         Portal.Probe probe = p.probe();
+        if (!probe.online && probe.intercepted) {
+            // 刚认证完网关可能还没放行，给一次机会再验
+            logStep("HTTP 通了但 HTTPS 没过，等 2 秒再验一次（刚认证完可能还没放行）");
+            sleepSeconds(2);
+            probe = p.probe();
+        }
         ServiceState.online = probe.online;
         if (probe.online) {
             if (inEia) {
@@ -460,35 +468,41 @@ public class AuthService extends Service {
                 logOk("外网连通测试通过：" + probe.summary() + "，当前是校园网（campus）");
                 setPhase("已在线");
             }
-            ServiceState.clearEia();
+            ServiceState.clearPortal();
             return;
         }
 
-        String redirect = probe.redirect;
+        logWarn("外网连通测试未通过：" + probe.summary());
+
+        // 只有"像门户"的跳转才当作门户地址（百度的 http→m.baidu.com 这种不算）
+        String redirect = Portal.looksLikePortal(probe.redirect) ? probe.redirect : "";
         if (redirect.isEmpty()) {
             redirect = p.detectPortalRedirect();
         }
-        logWarn("外网连通测试未通过：" + probe.summary());
-        if (!inEia && redirect.isEmpty()) {
-            logStep("既连不上外网，也没有被劫持到别的门户；先继续心跳，稍后再测");
+        boolean needPortal = inEia || probe.intercepted || probe.eiaLike;
+        if (!needPortal) {
+            logStep("既连不上外网，也没有被劫持到门户；先继续心跳，稍后再测");
             return;
         }
 
-        if (!inEia) {
-            logWarn("HTTP 请求被劫持到非 BRAS 门户，判断为学校 eIA 准入网");
+        if (probe.intercepted) {
+            logWarn("HTTP 能通但 HTTPS 握手失败（浏览器会报 ERR_SSL_VERSION_OR_CIPHER_MISMATCH），"
+                    + "说明仍被门户拦着，不能算已联网");
+        }
+        if (inEia) {
+            logWarn("本机地址 " + net.ipv4 + " 落在 eIA 准入网段 " + eiaNet);
         }
         if (portalUrl.isEmpty()) {
             portalUrl = redirect;
         }
         if (portalUrl.isEmpty()) {
-            logWarn("判断为学校 eIA 准入网，但没有门户地址：请在设置里填写 eia_portal");
-            setPhase("需要 eIA 认证");
+            logWarn("判定为需要门户认证，但拿不到门户地址：请在设置里填写 eia_portal");
+            setPhase("需要门户认证");
             return;
         }
-        logWarn("判断为学校 eIA 准入网（本机 MAC 可能还没登记），需要用浏览器完成首次认证");
-        logWarn("尝试用默认浏览器打开：" + portalUrl);
-        setPhase("需要 eIA 认证");
-        ServiceState.setEiaPortal(portalUrl);
+        logWarn("需要用浏览器完成首次认证，尝试用默认浏览器打开：" + portalUrl);
+        setPhase("需要门户认证");
+        ServiceState.setPortal(portalUrl);
     }
 
     private void keepLoop(Portal p, int netCheck) {

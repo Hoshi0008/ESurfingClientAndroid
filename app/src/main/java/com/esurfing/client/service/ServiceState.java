@@ -32,28 +32,28 @@ public final class ServiceState {
     /** 认证成功后外网是否真的通了。 */
     public static volatile boolean online;
     /**
-     * 判定为学校 eIA 准入网时，需要用户去完成首次认证的门户地址；
-     * 界面拿到它就尝试用默认浏览器打开。
+     * 判定为需要门户认证（学校 eIA 准入网，或者 HTTP 通了但 HTTPS 被劫持）时，
+     * 需要用户去完成认证的门户地址；界面拿到它就尝试用默认浏览器打开。
      */
-    public static volatile String eiaPortal = "";
-    public static volatile long eiaPortalAt;
+    public static volatile String portalUrl = "";
+    public static volatile long portalAt;
 
     private ServiceState() {
     }
 
-    public static void setEiaPortal(String url) {
+    public static void setPortal(String url) {
         if (url == null || url.isEmpty()) {
             return;
         }
-        eiaPortal = url;
-        eiaPortalAt = System.currentTimeMillis();
+        portalUrl = url;
+        portalAt = System.currentTimeMillis();
         publish();
     }
 
-    public static void clearEia() {
-        if (!eiaPortal.isEmpty()) {
-            eiaPortal = "";
-            eiaPortalAt = 0;
+    public static void clearPortal() {
+        if (!portalUrl.isEmpty()) {
+            portalUrl = "";
+            portalAt = 0;
             publish();
         }
     }
@@ -90,8 +90,8 @@ public final class ServiceState {
         server = "";
         keepInterval = 0;
         online = false;
-        eiaPortal = "";
-        eiaPortalAt = 0;
+        portalUrl = "";
+        portalAt = 0;
         publish();
     }
 }

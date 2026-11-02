@@ -72,7 +72,7 @@ public final class MainPage implements Page {
             if (!visible) {
                 return;
             }
-            updateChip(App.get().config());
+            refresh();
             act.handler.postDelayed(this, 8000);
         }
     };
@@ -208,20 +208,23 @@ public final class MainPage implements Page {
         Config c = App.get().config();
         boolean ready = c.ready();
         boolean running = ServiceState.running;
-        String key = !ready ? "first" : (running ? "run:" + ServiceState.startTime : "stop");
+        NetInfo net = NetInfo.read(act);
+        boolean wifi = net.wifi;
+        // Wi-Fi 连没连上也进 key：没连时启动按钮要禁用，连上后要能变回可点
+        String key = !ready ? "first"
+                : (running ? "run:" + ServiceState.startTime : "stop:" + (wifi ? 1 : 0));
         if (!key.equals(stateKey)) {
             stateKey = key;
-            rebuildStatus(c, ready, running);
+            rebuildStatus(c, ready, running, wifi);
         }
         rebuildInfo(c, running);
         rebuildKeep(c);
-        updateChip(c);
+        updateChip(c, wifi);
         syncTicker();
     }
 
-    private void updateChip(Config c) {
-        NetInfo net = NetInfo.read(act);
-        if (!net.wifi) {
+    private void updateChip(Config c, boolean wifi) {
+        if (!wifi) {
             chip.setText("未连接 WiFi");
             return;
         }
@@ -234,7 +237,7 @@ public final class MainPage implements Page {
         chip.setText(ssid);
     }
 
-    private void rebuildStatus(Config c, boolean ready, boolean running) {
+    private void rebuildStatus(Config c, boolean ready, boolean running, boolean wifi) {
         statusCard.removeAllViews();
         userBox = null;
         passBox = null;
@@ -248,7 +251,7 @@ public final class MainPage implements Page {
         } else if (running) {
             buildRunning();
         } else {
-            buildStopped();
+            buildStopped(wifi);
         }
     }
 
@@ -311,7 +314,7 @@ public final class MainPage implements Page {
         refresh();
     }
 
-    private void buildStopped() {
+    private void buildStopped(boolean wifi) {
         statusCard.addView(statusRow("未启动服务", t.red, 27f));
         Pill start = new Pill(act, t, "启动", Pill.YELLOW);
         LinearLayout wrap = new LinearLayout(act);
@@ -322,6 +325,20 @@ public final class MainPage implements Page {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         wrapLp.topMargin = Ui.dp(act, 22);
         statusCard.addView(wrap, wrapLp);
+
+        if (!wifi) {
+            // 没有 Wi-Fi 就不让启动：认证只走 WLAN，启了也只会空转
+            start.setEnabled(false);
+            start.setAlpha(0.45f);
+            start.setOnClickListener(null);
+            TextView hint = Ui.text(act, "未连接 WiFi，请先连接校园网 Wi-Fi", 12f, t.muted, false);
+            hint.setGravity(Gravity.CENTER);
+            LinearLayout.LayoutParams hintLp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            hintLp.topMargin = Ui.dp(act, 12);
+            statusCard.addView(hint, hintLp);
+            return;
+        }
         start.setOnClickListener(v -> act.requestNotifThen(
                 () -> AuthService.start(act, AuthService.ACTION_START)));
     }

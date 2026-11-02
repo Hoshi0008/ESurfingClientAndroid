@@ -75,11 +75,11 @@ public class MainActivity extends Activity {
         if (pages[PAGE_MAIN] instanceof MainPage) {
             ((MainPage) pages[PAGE_MAIN]).refresh();
         }
-        maybeOpenEiaPortal();
+        maybeOpenPortal();
     });
 
     /** 已经为哪个门户地址拉起过浏览器，避免重复弹。 */
-    private String openedEiaPortal = "";
+    private String openedPortal = "";
 
     // ------------------------------------------------------------------ 生命周期
 
@@ -187,7 +187,7 @@ public class MainActivity extends Activity {
             ensure(PAGE_MAIN);
         }
         ((MainPage) pages[PAGE_MAIN]).refresh();
-        maybeOpenEiaPortal();
+        maybeOpenPortal();
         requestWifiNamePermission(false);
     }
 
@@ -458,19 +458,19 @@ public class MainActivity extends Activity {
      *
      * <p>只在地址较新（2 分钟内）时打开，避免用户切回来时突然弹浏览器。</p>
      */
-    private void maybeOpenEiaPortal() {
-        String url = ServiceState.eiaPortal;
+    private void maybeOpenPortal() {
+        String url = ServiceState.portalUrl;
         if (url == null || url.isEmpty()) {
-            openedEiaPortal = "";
+            openedPortal = "";
             return;
         }
-        if (url.equals(openedEiaPortal)) {
+        if (url.equals(openedPortal)) {
             return;
         }
-        if (System.currentTimeMillis() - ServiceState.eiaPortalAt > 120_000L) {
+        if (System.currentTimeMillis() - ServiceState.portalAt > 120_000L) {
             return;
         }
-        openedEiaPortal = url;
+        openedPortal = url;
         openInBrowser(url);
     }
 
