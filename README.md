@@ -3,7 +3,7 @@
 对广东天翼校园网（`cdcportal` / `portal` 认证）的**轻量级** Android 客户端。
 协议来自参考后端 [Hoshi0008/ESurfing](https://github.com/Hoshi0008/ESurfing)，本工程把它完整移植到了 Android（纯 Java + Android Framework，**零第三方依赖**）。
 
-- **安装包 126 KB**（v1.1，release，R8 + 资源压缩）——远低于 1 MB
+- **安装包 128 KB**（v1.1，release，R8 + 资源压缩）——远低于 1 MB
 - **后台长期驻留**：前台服务 + 常驻通知 + START_STICKY + 开机自启 + 15 分钟看门狗 + 电池优化白名单引导
 - **磨砂玻璃 UI**：圆角半透明卡片、真实高斯模糊（GPU `RenderEffect`）、弹窗由小到大弹出、暗黑模式
 - **配置持久化**：`files/esurfing.conf`，键名与参考后端完全一致，可从 PC 端直接迁移
@@ -17,9 +17,9 @@
 | --- | --- | --- |
 | ![首次使用](docs/shots/first-run.png) | ![未启动](docs/shots/main-stopped.png) | ![未连接 WiFi](docs/shots/main-no-wifi.png) |
 
-| 需要门户认证（状态标红 + 一键打开门户） | 自动跳转到的准入门户 | 日志（实时写入） |
+| 需要门户认证（状态标红 + 一键打开门户） | 自动跳转到的准入门户 | 真机认证成功（已在线） |
 | --- | --- | --- |
-| ![需要门户认证](docs/shots/main-portal.png) | ![准入门户](docs/shots/portal-browser.png) | ![日志](docs/shots/log-live.png) |
+| ![需要门户认证](docs/shots/main-portal.png) | ![准入门户](docs/shots/portal-browser.png) | ![真机已在线](docs/shots/main-real-online.png) |
 
 | 设置（逐项修改） |
 | --- |
@@ -59,6 +59,8 @@
 - 页面切换：交叉淡入 + 轻微上移缩放（230 ms），选项卡胶囊滑动（260 ms）
 - 暗黑模式：`theme` 在「应用设置」里用**下拉框**选「跟随系统 / 浅色 / 深色」，保存后立即生效（Activity 重建）
 - 文字对比度：浅色正文 `#101828`、深色正文 `#EAF0FA`，弱化文字也保持 4.5:1 以上
+- **认证服务器只认配置或内置**：内置 `14.146.227.141` / `121.8.177.212`（与 Linux 客户端一致），从门户跳转里只取 `wlanacip`，
+  不拿跳转域名当 BRAS——天翼的 HTTP 跳转常常指向自助服务页（如 `enet.10000.gd.cn:10001`），拿它去发 `ticket.cgi` 必然连不上
 - **自动跳转准入门户**：判定需要门户认证时（eIA 网段 / HTTP 通但 HTTPS 被劫持 / 系统报告 `CAPTIVE_PORTAL` / 探测不到 BRAS 门户），
   按 `eia_portal` → 探测到的跳转 → 网关首页 → `http://connectivitycheck.gstatic.com/generate_204`（一定会被门户劫持）的顺序挑一个地址，
   直接拉起默认浏览器；主界面还留了「认证门户 · 点此打开」入口，同一个地址只弹一次
@@ -211,7 +213,12 @@ adb reverse tcp:7001 tcp:7001 && adb reverse tcp:7002 tcp:7002
 - [x] 日志：实时追加、自动滚屏、⠇ 菜单、`打开日志`（列表选择）、`导出日志`（SAF 另存为，写入 Downloads 成功）
 - [x] 设置：19 项逐行显示、`passwd` 掩码、输入弹窗校验、保存后小浮窗「重启服务后生效」
 - [x] 主题：设置里 `theme` 改成**下拉框**（跟随系统 / 浅色 / 深色），选中保存后立即重建界面并切换配色
-- [x] **真机验证（Android 16 / 五邑大学 WYUNET-STUDENT）**：HTTP 全被门户回 200、443 握手 `UNSUPPORTED_PROTOCOL`，日志按顺序打出
+- [x] **真机端到端（Android 16 / WYUNET-STUDENT，IP 100.2.159.88）**：`ticket.cgi` → `Error-Code=0`，`auth.cgi` → `Error-Code=0`，
+      `keep-url=http://14.146.227.142:7001/keep.cgi`，随后 `generate_204 -> 204`、`baidu TLSv1.2 握手成功`，
+      主界面「认证服务器 14.146.227.141 / 当前状态 已在线」；跑满 3 分钟后仍在心跳
+- [x] 修掉「认证服务器识别错」：跳转地址是 `enet.10000.gd.cn:10001`（天翼自助服务页），
+      以前拿它当 BRAS 去发 `ticket.cgi` 必然 `failed to connect`；现在只从跳转里取 `wlanacip=119.146.175.80`，BRAS 用内置的 `14.146.227.141:7001`
+- [x] 修掉 IPv6 干扰：`www.baidu.com` 之前解析到 `240e:...` 直连失败，现在 HTTP 客户端强制走 IPv4- [x] **真机验证（Android 16 / 五邑大学 WYUNET-STUDENT）**：HTTP 全被门户回 200、443 握手 `UNSUPPORTED_PROTOCOL`，日志按顺序打出
       「外网探测 -> 200」→「HTTPS 失败」→「外网连通测试未通过：不在线」→「探测到门户劫持：…（不是 204）」→
       「尝试用默认浏览器打开：http://connectivitycheck.gstatic.com/generate_204」，浏览器真的落在校方登录页（截图见上）
 - [x] 打开 App 不再自动启动服务：「开机自启」默认关闭，只有用户手动点「启动」或显式打开该开关才会起
@@ -244,7 +251,7 @@ adb reverse tcp:7001 tcp:7001 && adb reverse tcp:7002 tcp:7002
 
 | 指标 | 数值 |
 | --- | --- |
-| release APK | **126 KB**（129256 字节，v1.1） |
+| release APK | **128 KB**（130704 字节，v1.1） |
 | 其中 `classes.dex` | ≈ 80 KB |
 | 冷启动：进程启动 → `onCreate` 结束 | **340 ~ 450 ms** |
 | 冷启动：系统 `Displayed` | 1.4 ~ 1.8 s（本机 SwiftShader 软件渲染模拟器） |

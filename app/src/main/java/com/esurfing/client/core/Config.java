@@ -152,6 +152,10 @@ public final class Config {
         }
     }
 
+    /** 本校区（五邑大学 WYUNET-STUDENT）：天翼池 / 学校 eIA 准入网。 */
+    public static final String DEFAULT_CAMPUS_NET = "100.2.0.0/16";
+    public static final String DEFAULT_EIA_NET = "172.21.0.0/16";
+
     private static final List<Field> SCHEMA = new ArrayList<Field>();
 
     static {
@@ -162,8 +166,8 @@ public final class Config {
         SCHEMA.add(new Field("servers", "认证服务器", "", "BRAS 地址，逗号分隔；留空则自动探测"));
         SCHEMA.add(new Field("port", "门户端口", "7001", "认证门户端口"));
         SCHEMA.add(new Field("acip", "认证器", "", "自动探测失败时手动指定 AC 地址"));
-        SCHEMA.add(new Field("campus_net", "天翼网段", "", "如 10.0.0.0/8；只有落在此网段才认证"));
-        SCHEMA.add(new Field("eia_net", "准入网段", "", "落到这里说明本机 MAC 还没登记"));
+        SCHEMA.add(new Field("campus_net", "天翼网段", DEFAULT_CAMPUS_NET, "只有落在此网段才认证；本校区默认 100.2.0.0/16"));
+        SCHEMA.add(new Field("eia_net", "准入网段", DEFAULT_EIA_NET, "落到这里说明本机 MAC 还没登记；本校区默认 172.21.0.0/16"));
         SCHEMA.add(new Field("eia_portal", "准入门户", "", "MAC 登记页地址，如 http://10.1.1.1"));
         SCHEMA.add(new Field("schoolid", "学校ID", "", "多数学校留空"));
         SCHEMA.add(new Field("domain", "域", "", "多数学校留空"));

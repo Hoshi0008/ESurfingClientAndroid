@@ -1,6 +1,8 @@
 package com.esurfing.client.core;
 
 import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -47,6 +49,12 @@ public final class Portal {
 
     /** 什么都探测不到时，拿这个地址当「会被门户劫持」的入口去开浏览器。 */
     public static final String PORTAL_ENTRY = "http://connectivitycheck.gstatic.com/generate_204";
+
+    /** 认证服务器候选：和 Linux 客户端的内置列表一致，配置里留空时用它们。 */
+    public static final String[] DEFAULT_SERVERS = {"14.146.227.141", "121.8.177.212"};
+
+    /** 探测不到 wlanacip 时，直接拿这几台 AC 试一把（本校区 AC）。 */
+    public static final String[] FALLBACK_ACIPS = {"119.146.175.80"};
 
     static final String ACCEPT =
             "text/html,text/xml,application/xhtml+xml,application/x-javascript,*/*";
@@ -230,10 +238,6 @@ public final class Portal {
                             ip = uip;
                             localIp = uip;
                         }
-                        String host = hostOf(loc);
-                        if (server.isEmpty() && !host.isEmpty()) {
-                            server = host;
-                        }
                         note(Log.P_STEP, "发现门户跳转: " + loc);
                         String acip = regex(loc, "wlanacip=([0-9]{1,3}(?:\\.[0-9]{1,3}){3})");
                         return acip == null ? "" : acip;
@@ -253,6 +257,13 @@ public final class Portal {
                     candidates.add(s.trim());
                 }
             }
+        }
+        if (candidates.isEmpty()) {
+            // 配置里没写就退到内置的两台（Linux 客户端也是这么兜的）
+            for (String s : DEFAULT_SERVERS) {
+                candidates.add(s);
+            }
+            note(Log.P_STEP, "配置里没有认证服务器，使用内置的 " + joinServers(candidates));
         }
         for (String srv : candidates) {
             try {
@@ -371,7 +382,17 @@ public final class Portal {
                 } else if (localIp != null && !localIp.trim().isEmpty()) {
                     socket.bind(new InetSocketAddress(localIp.trim(), 0));
                 }
-                socket.connect(new InetSocketAddress(host, 443), 6000);
+                InetAddress tlsAddr = null;
+                for (InetAddress a : InetAddress.getAllByName(host)) {
+                    if (a instanceof Inet4Address) {
+                        tlsAddr = a;
+                        break;
+                    }
+                }
+                if (tlsAddr == null) {
+                    tlsAddr = InetAddress.getByName(host);
+                }
+                socket.connect(new InetSocketAddress(tlsAddr, 443), 6000);
                 socket.setSoTimeout(6000);
                 SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
                 SSLSocket ssl = (SSLSocket) factory.createSocket(socket, host, 443, true);
@@ -754,6 +775,17 @@ public final class Portal {
     private static String regex(String text, String pattern) {
         java.util.regex.Matcher m = java.util.regex.Pattern.compile(pattern).matcher(text);
         return m.find() ? m.group(1) : null;
+    }
+
+    private static String joinServers(List<String> list) {
+        StringBuilder sb = new StringBuilder();
+        for (String s : list) {
+            if (sb.length() > 0) {
+                sb.append(", ");
+            }
+            sb.append(s);
+        }
+        return sb.toString();
     }
 
     private static String hostOf(String url) {

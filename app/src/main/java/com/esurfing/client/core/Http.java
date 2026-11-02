@@ -5,6 +5,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -128,7 +130,7 @@ final class Http {
                     }
                 }
             }
-            socket.connect(new InetSocketAddress(host, port), timeoutMs);
+            socket.connect(new InetSocketAddress(resolveIpv4(host), port), timeoutMs);
             socket.setSoTimeout(timeoutMs);
             socket.setTcpNoDelay(true);
 
@@ -154,8 +156,27 @@ final class Http {
         }
     }
 
-    private static byte[] buildHead(String method, String host, int port, String path,
-                                    byte[] body, Map<String, String> extraHeaders) {
+    /**
+     * 优先用 IPv4 连：校园网这套门户/BRAS 全是 IPv4，而手机同时有 IPv6 时
+     * {@code new InetSocketAddress(host, port)} 会解析到 IPv6 直接连不上。
+     */
+    private static InetAddress resolveIpv4(String host) throws IOException {
+        if (host.matches("[0-9]{1,3}(?:\\.[0-9]{1,3}){3}")) {
+            return InetAddress.getByName(host);
+        }
+        InetAddress[] all = InetAddress.getAllByName(host);
+        for (InetAddress a : all) {
+            if (a instanceof Inet4Address) {
+                return a;
+            }
+        }
+        if (all.length > 0) {
+            return all[0];
+        }
+        throw new IOException("解析不到地址: " + host);
+    }
+
+    private static byte[] buildHead(String method, String host, int port, String path,                                    byte[] body, Map<String, String> extraHeaders) {
         StringBuilder sb = new StringBuilder(512);
         sb.append(method).append(' ').append(path).append(" HTTP/1.1\r\n");
         sb.append("Host: ").append(host);

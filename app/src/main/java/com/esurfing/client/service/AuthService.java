@@ -333,12 +333,16 @@ public class AuthService extends Service {
         }
 
         boolean force = cfg.boolOf("force", false);
-        String campus = cfg.get("campus_net").trim();
+        String campus = cfg.get("campus_net", Config.DEFAULT_CAMPUS_NET).trim();
         if (!campus.isEmpty() && !IpUtil.anyCidrContains(campus, net.ipv4) && !force) {
             logWarn(net.ipv4 + " 不在天翼网段 " + campus + "，跳过认证");
             boolean inEia = inEiaNet(cfg, net);
             if (inEia) {
-                logWarn("这是学校 eIA 准入网：本机 MAC 还没登记");
+                logWarn("这是学校 eIA 准入网：本机 MAC 还没登记进白名单");
+                logWarn("用「学号 + 身份证后八位」在门户里登录一次，学校会把这个 MAC 登记上；"
+                        + "之后重连 WiFi 会拿到 " + campus + " 的地址，再由本客户端认证");
+                logWarn("注意：手机若用「随机 MAC」，每次连接都是一台新设备，"
+                        + "请在 Wi-Fi 设置里把 MAC 改成「使用设备 MAC」");
                 offerPortal(cfg, net, "", true, "需要用浏览器完成首次认证");
             }
             setPhase(inEia ? "需要门户认证" : "不在天翼网段");
@@ -394,6 +398,14 @@ public class AuthService extends Service {
                 logStep("使用配置里的 acip=" + acip);
             }
         }
+        if (acip.isEmpty() && IpUtil.anyCidrContains(campus, net.ipv4)) {
+            // 在天翼池里但探测不到 AC：用内置的本校区 AC 试一把（Linux 客户端也是手动填这个）
+            for (String ac : Portal.FALLBACK_ACIPS) {
+                acip = ac;
+                logStep("探测不到 wlanacip，先用内置 AC 试一把：" + ac);
+                break;
+            }
+        }
         if (acip.isEmpty()) {
             logWarn("探测不到 wlanacip：请在设置里填写 acip，或确认已连上校园网 WiFi");
             if (!p.lastRedirect().isEmpty()) {
@@ -417,9 +429,24 @@ public class AuthService extends Service {
             return;
         }
 
+        // 认证服务器只认「配置里的」或「内置的」，不能用门户跳转的域名：
+        // 跳转去打的是天翼自助服务页（如 enet.10000.gd.cn:10001），
+        // 真正跑 ticket/auth 的 BRAS 是 14.146.227.141:7001 这种。
         String server = p.server();
         if (server.isEmpty()) {
-            server = servers.isEmpty() ? "" : servers.get(0);
+            List<String> all = new ArrayList<String>();
+            if (servers != null) {
+                all.addAll(servers);
+            }
+            if (all.isEmpty()) {
+                for (String s : Portal.DEFAULT_SERVERS) {
+                    all.add(s);
+                }
+            }
+            server = all.isEmpty() ? "" : all.get(0);
+            if (!server.isEmpty() && (servers == null || servers.isEmpty())) {
+                logStep("配置里没有认证服务器，使用内置的 " + server);
+            }
         }
         if (server.isEmpty()) {
             logWarn("没有可用的认证服务器：请在设置里填写 servers");
@@ -465,7 +492,7 @@ public class AuthService extends Service {
      */
     private void checkReachability(Portal p, NetInfo net) {
         Config cfg = config;
-        String eiaNet = cfg.get("eia_net").trim();
+        String eiaNet = cfg.get("eia_net", Config.DEFAULT_EIA_NET).trim();
         boolean inEia = !eiaNet.isEmpty() && net.ipv4 != null
                 && IpUtil.anyCidrContains(eiaNet, net.ipv4);
 
@@ -524,7 +551,7 @@ public class AuthService extends Service {
 
     /** 当前地址是否落在配置的 eIA 准入网段。 */
     private boolean inEiaNet(Config cfg, NetInfo net) {
-        String eiaNet = cfg.get("eia_net").trim();
+        String eiaNet = cfg.get("eia_net", Config.DEFAULT_EIA_NET).trim();
         return !eiaNet.isEmpty() && net.ipv4 != null && IpUtil.anyCidrContains(eiaNet, net.ipv4);
     }
 
