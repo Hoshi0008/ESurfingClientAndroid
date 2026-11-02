@@ -4,9 +4,6 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Color;
 
-import com.esurfing.client.App;
-import com.esurfing.client.core.Config;
-
 /**
  * 配色方案。所有界面颜色都从这里取，保证浅色 / 深色两套主题各自协调，
  * 并且文本与背景的对比度足够（正文 #101828 / #EAF0FA，弱化文字也保持 4.5:1 以上）。
@@ -119,16 +116,13 @@ public final class Theme {
         return new Theme(isDark(ctx));
     }
 
-    /** 配置里的 theme=auto/light/dark，auto 时跟随系统。 */
+    /** 主题来自应用级设置（不写进 esurfing.conf），auto 时跟随系统。 */
     public static boolean isDark(Context ctx) {
         String mode = "auto";
         try {
-            Config c = App.get().config();
-            if (c != null) {
-                mode = c.get("theme");
-            }
+            mode = com.esurfing.client.AppPrefs.theme(ctx);
         } catch (RuntimeException ignored) {
-            // Application 还没起来时按系统走
+            // Context 还没准备好时按系统走
         }
         if ("light".equalsIgnoreCase(mode)) {
             return false;

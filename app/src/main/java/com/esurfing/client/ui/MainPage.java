@@ -441,7 +441,7 @@ public final class MainPage implements Page {
                 ignoring ? "已授权" : "点此授权 ›",
                 false, ignoring ? t.green : t.accent1,
                 ignoring ? null : this::requestBatteryOptimization);
-        boolean autoStart = c.boolOf("auto_start", true);
+        boolean autoStart = com.esurfing.client.AppPrefs.autoStart(act);
         addRow(keepCard, "开机自启", autoStart ? "已开启" : "已关闭",
                 false, autoStart ? t.green : t.muted, null);
     }

@@ -26,7 +26,8 @@ public class BootReceiver extends BroadcastReceiver {
         Config cfg = Config.load(App.get() != null
                 ? App.get().configFile()
                 : new java.io.File(app.getFilesDir(), "esurfing.conf"));
-        if (!cfg.boolOf("auto_start", true) || !cfg.ready()) {
+        // 开机自启是应用级设置，单独存放
+        if (!com.esurfing.client.AppPrefs.autoStart(app) || !cfg.ready()) {
             return;
         }
         AuthService.start(app, AuthService.ACTION_START);

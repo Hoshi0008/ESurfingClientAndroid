@@ -407,9 +407,9 @@ public class MainActivity extends Activity {
         FloatToast.show(this, ok ? "日志已导出" : "导出失败");
     }
 
-    /** 保存设置后如果是主题变更，就地重建界面。 */
+    /** 保存主题后重建界面：留点时间让「已保存」的小浮窗露个脸。 */
     public void recreateAfterThemeChange() {
-        handler.postDelayed(this::recreate, 520);
+        handler.postDelayed(this::recreate, 900);
     }
 
     /**

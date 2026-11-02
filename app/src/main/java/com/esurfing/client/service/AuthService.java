@@ -354,12 +354,16 @@ public class AuthService extends Service {
         int netCheck = cfg.intOf("net_check", 300);
         if (!force) {
             setPhase("检测网络");
-            if (p.probeOnline()) {
-                logOk("网络已在线（" + net.ipv4 + "），无需认证");
+            logInfo("认证前先测一次外网连通性");
+            Portal.Probe probe = p.probe();
+            ServiceState.online = probe.online;
+            if (probe.online) {
+                logOk("外网连通测试通过：" + probe.summary() + "，无需认证");
                 setPhase("网络已在线");
                 sleepSeconds(Math.max(30, netCheck > 0 ? Math.min(netCheck, 120) : 60));
                 return;
             }
+            logWarn("外网连通测试未通过：" + probe.summary() + "，开始认证");
         }
 
         setPhase("探测门户");
@@ -433,25 +437,34 @@ public class AuthService extends Service {
         boolean inEia = !eiaNet.isEmpty() && net.ipv4 != null
                 && IpUtil.anyCidrContains(eiaNet, net.ipv4);
 
-        boolean online = p.probeOnline();
-        ServiceState.online = online;
-        if (online) {
+        logInfo("开始外网连通测试（认证已受理）");
+        Portal.Probe probe = p.probe();
+        ServiceState.online = probe.online;
+        if (probe.online) {
             if (inEia) {
-                logWarn("外网可达，但地址 " + net.ipv4 + " 仍落在 eIA 网段 " + eiaNet + "，请留意");
+                logWarn("外网连通测试：" + probe.summary()
+                        + "，但地址 " + net.ipv4 + " 仍落在 eIA 网段 " + eiaNet + "，请留意");
             } else {
-                logOk("外网连通测试通过，当前是校园网（campus）");
+                logOk("外网连通测试通过：" + probe.summary() + "，当前是校园网（campus）");
                 setPhase("已在线");
             }
             ServiceState.clearEia();
             return;
         }
 
-        String redirect = p.detectPortalRedirect();
+        String redirect = probe.redirect;
+        if (redirect.isEmpty()) {
+            redirect = p.detectPortalRedirect();
+        }
+        logWarn("外网连通测试未通过：" + probe.summary());
         if (!inEia && redirect.isEmpty()) {
-            logStep("外网暂时不可达，也没有被劫持到别的门户；继续心跳，稍后再测");
+            logStep("既连不上外网，也没有被劫持到别的门户；先继续心跳，稍后再测");
             return;
         }
 
+        if (!inEia) {
+            logWarn("HTTP 请求被劫持到非 BRAS 门户，判断为学校 eIA 准入网");
+        }
         if (portalUrl.isEmpty()) {
             portalUrl = redirect;
         }
@@ -501,12 +514,14 @@ public class AuthService extends Service {
             }
             if (netCheck > 0 && System.currentTimeMillis() - lastNetCheck >= netCheck * 1000L) {
                 lastNetCheck = System.currentTimeMillis();
-                if (!p.probeOnline()) {
-                    logWarn("外网校验失败，重新认证");
+                Portal.Probe probe = p.probe();
+                ServiceState.online = probe.online;
+                if (!probe.online) {
+                    logWarn("外网连通测试未通过：" + probe.summary() + "，重新认证");
                     setPhase("外网校验失败，重新认证");
                     return;
                 }
-                logStep("外网校验通过");
+                logOk("外网连通测试通过：" + probe.summary());
             }
         }
     }

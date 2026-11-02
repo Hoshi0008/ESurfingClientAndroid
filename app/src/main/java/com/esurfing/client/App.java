@@ -42,6 +42,8 @@ public class App extends Application {
             // 首次运行：落一份带注释的配置模板，用户可以在「设置」页逐项修改
             Config.load(configFile).save();
         }
+        // 老版本把 theme / auto_start 写在配置文件里，升级时迁到应用级设置
+        AppPrefs.migrateIfNeeded(this);
         createChannel();
         // JobScheduler 是 binder 调用，放到后台线程，别拖慢冷启动
         new Thread(() -> KeepAliveJobService.schedule(App.this), "keepalive-schedule").start();

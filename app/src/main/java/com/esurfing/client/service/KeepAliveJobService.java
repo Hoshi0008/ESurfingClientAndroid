@@ -44,7 +44,7 @@ public class KeepAliveJobService extends JobService {
             Config cfg = Config.load(App.get() != null
                     ? App.get().configFile()
                     : new java.io.File(getFilesDir(), "esurfing.conf"));
-            if (cfg.ready() && cfg.boolOf("auto_start", true)) {
+            if (cfg.ready() && com.esurfing.client.AppPrefs.autoStart(this)) {
                 try {
                     startForegroundService(new Intent(this, AuthService.class)
                             .setAction(AuthService.ACTION_START));

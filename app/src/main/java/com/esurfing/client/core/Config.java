@@ -29,14 +29,22 @@ public final class Config {
         public final String def;
         public final String hint;
         public final String[] options;
+        /** true = 应用级设置（主题、开机自启），不写进网络配置文件。 */
+        public final boolean appLevel;
         /** 可选项的显示名（与 {@link #options} 一一对应，可为 null 表示直接显示原值）。 */
         public String[] labels;
 
         Field(String key, String label, String def, String hint, String... options) {
+            this(key, label, def, hint, false, options);
+        }
+
+        Field(String key, String label, String def, String hint, boolean appLevel,
+              String... options) {
             this.key = key;
             this.label = label;
             this.def = def;
             this.hint = hint;
+            this.appLevel = appLevel;
             this.options = options == null || options.length == 0 ? null : options;
         }
 
@@ -166,9 +174,15 @@ public final class Config {
                 "false", "true").labels("关闭", "开启"));
         SCHEMA.add(new Field("mac", "上报MAC", "", "留空则每次随机生成（服务端不校验真伪）"));
         SCHEMA.add(new Field("ssid", "校园WiFi", "", "仅作记录，便于确认连的是哪张网"));
-        SCHEMA.add(new Field("theme", "主题", "auto", "深色 / 浅色 / 跟随系统",
+    }
+
+    /** 应用级设置：与网络配置分开保存、改完立即生效（不写进 esurfing.conf）。 */
+    private static final List<Field> APP_FIELDS = new ArrayList<Field>();
+
+    static {
+        APP_FIELDS.add(new Field("theme", "主题", "auto", "深色 / 浅色 / 跟随系统", true,
                 "auto", "light", "dark").labels("跟随系统", "浅色", "深色"));
-        SCHEMA.add(new Field("auto_start", "开机自启", "true", "开机后自动启动认证服务",
+        APP_FIELDS.add(new Field("auto_start", "开机自启", "true", "开机后自动启动认证服务", true,
                 "true", "false").labels("开启", "关闭"));
     }
 
@@ -190,8 +204,18 @@ public final class Config {
         return SCHEMA;
     }
 
+    /** 应用级设置项（主题、开机自启），单独存在 AppPrefs 里。 */
+    public static List<Field> appFields() {
+        return APP_FIELDS;
+    }
+
     public static Field field(String key) {
         for (Field f : SCHEMA) {
+            if (f.key.equals(key)) {
+                return f;
+            }
+        }
+        for (Field f : APP_FIELDS) {
             if (f.key.equals(key)) {
                 return f;
             }
@@ -268,6 +292,11 @@ public final class Config {
     public Config set(String key, String value) {
         values.put(key, value == null ? "" : value.trim());
         return this;
+    }
+
+    /** 删掉某个键（升级迁移用），返回是否真的存在过。 */
+    public boolean remove(String key) {
+        return values.remove(key) != null;
     }
 
     /** 关键项齐全（账号 + 密码都非空）才算配置完成。 */

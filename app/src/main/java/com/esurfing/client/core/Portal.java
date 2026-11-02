@@ -244,23 +244,78 @@ public final class Portal {
         return "";
     }
 
-    /** 是否已在线（能拿到 204 / 正常网页说明放行）。 */
-    public boolean probeOnline() {
+    /** 一次外网连通性探测的完整结果，供日志把「测了什么、结果是什么」写清楚。 */
+    public static final class Probe {
+        /** 是否真的连上了外网。 */
+        public boolean online;
+        /** 命中的探测地址。 */
+        public String url = "";
+        /** 该地址的 HTTP 状态码，0 表示没拿到响应。 */
+        public int status;
+        /** 被劫持时的跳转地址。 */
+        public String redirect = "";
+        /** 失败原因。 */
+        public String error = "";
+        /** 跳转目标不像 BRAS 门户（更像学校 eIA 门户）。 */
+        public boolean eiaLike;
+
+        /** 一行摘要，写进日志用。 */
+        public String summary() {
+            if (online) {
+                return "在线（" + url + " 返回 " + status + "）";
+            }
+            StringBuilder sb = new StringBuilder("不在线");
+            if (!redirect.isEmpty()) {
+                sb.append("（被跳转到 ").append(redirect).append("）");
+            } else if (!error.isEmpty()) {
+                sb.append("（").append(error).append("）");
+            }
+            return sb.toString();
+        }
+    }
+
+    /**
+     * 逐个探测外网地址，并把每次请求的结果写进日志。
+     *
+     * <p>判定：204，或 200 且没有跳转，就算已放行；302 到不带 {@code wlanuserip}
+     * 的门户则记为疑似 eIA 门户。</p>
+     */
+    public Probe probe() {
+        Probe result = new Probe();
         for (String url : DETECT_URLS) {
             try {
                 Http.Response r = Http.request("GET", url, null, uaHeaders(), localIp, 6000);
-                if (r.status == 204) {
-                    return true;
-                }
                 String loc = r.header("location");
-                if (r.status == 200 && (loc == null || !loc.startsWith("http"))) {
-                    return true;
+                note(Log.P_INFO, "外网探测 " + url + " -> " + r.status
+                        + (loc == null || loc.isEmpty() ? "" : "，跳转 " + loc));
+                boolean ok = r.status == 204
+                        || (r.status == 200 && (loc == null || !loc.startsWith("http")));
+                if (ok) {
+                    result.online = true;
+                    result.url = url;
+                    result.status = r.status;
+                    return result;
                 }
-            } catch (IOException ignored) {
-                // 换下一个
+                if (loc != null && loc.startsWith("http")) {
+                    result.redirect = loc;
+                    result.status = r.status;
+                    result.url = url;
+                    if (!loc.contains("wlanuserip")) {
+                        result.eiaLike = true;
+                        note(Log.P_WARN, "外网请求被劫持到非 BRAS 门户：" + loc);
+                    }
+                }
+            } catch (IOException e) {
+                note(Log.P_INFO, "外网探测 " + url + " 失败: " + e.getMessage());
+                result.error = e.getMessage() == null ? "网络不可达" : e.getMessage();
             }
         }
-        return false;
+        return result;
+    }
+
+    /** 是否已在线（能拿到 204 / 正常网页说明放行）。 */
+    public boolean probeOnline() {
+        return probe().online;
     }
 
     /**
