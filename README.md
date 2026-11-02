@@ -3,7 +3,7 @@
 对广东天翼校园网（`cdcportal` / `portal` 认证）的**轻量级** Android 客户端。
 协议来自参考后端 [Hoshi0008/ESurfing](https://github.com/Hoshi0008/ESurfing)，本工程把它完整移植到了 Android（纯 Java + Android Framework，**零第三方依赖**）。
 
-- **安装包 126 KB**（release，R8 + 资源压缩）——远低于 1 MB
+- **安装包 126 KB**（v1.1，release，R8 + 资源压缩）——远低于 1 MB
 - **后台长期驻留**：前台服务 + 常驻通知 + START_STICKY + 开机自启 + 15 分钟看门狗 + 电池优化白名单引导
 - **磨砂玻璃 UI**：圆角半透明卡片、真实高斯模糊（GPU `RenderEffect`）、弹窗由小到大弹出、暗黑模式
 - **配置持久化**：`files/esurfing.conf`，键名与参考后端完全一致，可从 PC 端直接迁移
@@ -17,9 +17,13 @@
 | --- | --- | --- |
 | ![首次使用](docs/shots/first-run.png) | ![未启动](docs/shots/main-stopped.png) | ![未连接 WiFi](docs/shots/main-no-wifi.png) |
 
-| 需要门户认证（状态标红 + 一键打开门户） | 日志（实时写入） | 设置（逐项修改） |
+| 需要门户认证（状态标红 + 一键打开门户） | 自动跳转到的准入门户 | 日志（实时写入） |
 | --- | --- | --- |
-| ![需要门户认证](docs/shots/main-portal.png) | ![日志](docs/shots/log-live.png) | ![设置](docs/shots/settings.png) |
+| ![需要门户认证](docs/shots/main-portal.png) | ![准入门户](docs/shots/portal-browser.png) | ![日志](docs/shots/log-live.png) |
+
+| 设置（逐项修改） |
+| --- |
+| ![设置](docs/shots/settings.png) |
 
 | 磨砂弹窗 + 高斯模糊 | 主题下拉框 | 打开日志（按启动时间命名） |
 | --- | --- | --- |
@@ -29,10 +33,10 @@
 
 ## 一、快速开始
 
-1. 安装 `ESurfing-client.apk`（release 包用 debug 证书签名，可直接侧载；Android 12+）。
+1. 安装 `ESurfing-client-1.1.apk`（release 包用 debug 证书签名，可直接侧载；Android 12+）。
 2. 首次打开输入**校园网账号 / 密码**，点「确认」。
 3. 进入「设置」，按学校情况补齐 `servers`（BRAS 地址）、必要时填 `acip`、`campus_net`。
-4. 回「主界面」点「**启动**」，状态变为绿色「服务运行中」，下方开始实时显示服务**运行时长**。
+4. 回「主界面」点「**启动**」，状态变为绿色「服务运行中」，下方开始实时显示服务**运行时长**（服务不会开机/打开 App 自动启动，「开机自启」默认关闭）。
 5. 建议点「电池优化白名单 → 点此授权」，让系统不要掐心跳。
 
 > ⚠️ 本客户端只做 Portal 认证，**不绕过**学校的终端数限制、共享检测等策略。
@@ -55,6 +59,9 @@
 - 页面切换：交叉淡入 + 轻微上移缩放（230 ms），选项卡胶囊滑动（260 ms）
 - 暗黑模式：`theme` 在「应用设置」里用**下拉框**选「跟随系统 / 浅色 / 深色」，保存后立即生效（Activity 重建）
 - 文字对比度：浅色正文 `#101828`、深色正文 `#EAF0FA`，弱化文字也保持 4.5:1 以上
+- **自动跳转准入门户**：判定需要门户认证时（eIA 网段 / HTTP 通但 HTTPS 被劫持 / 系统报告 `CAPTIVE_PORTAL` / 探测不到 BRAS 门户），
+  按 `eia_portal` → 探测到的跳转 → 网关首页 → `http://connectivitycheck.gstatic.com/generate_204`（一定会被门户劫持）的顺序挑一个地址，
+  直接拉起默认浏览器；主界面还留了「认证门户 · 点此打开」入口，同一个地址只弹一次
 - **只走 WLAN**：认证与外网连通测试的每个 socket 都用 `Network.bindSocket` 固定到 Wi-Fi 网络，移动数据再多也不会被用到；没有连 Wi-Fi 时直接不做认证（日志写「当前没有连接 WLAN」），避免拿蜂窝网去判断「已在线」\n- 外网连通测试要**双保险**：HTTP（`generate_204`）之后还会对 `www.baidu.com` / `www.qq.com` 做一次真实 TLS 握手，只有握手成功才算在线——很多准入门户放行 204 却劫持 443，只测 HTTP 会误报"已联网"（浏览器报 `ERR_SSL_VERSION_OR_CIPHER_MISMATCH`）\n- 外网连通测试：认证成功后逐个探测 `generate_204` / baidu / qq，日志里逐条记 `外网探测 <url> -> <状态码>`，
   再给结论——「外网连通测试通过：在线（… 返回 204），当前是校园网（campus）」或「未通过：不在线（…）」并说明是否判为 eIA
 
@@ -204,6 +211,10 @@ adb reverse tcp:7001 tcp:7001 && adb reverse tcp:7002 tcp:7002
 - [x] 日志：实时追加、自动滚屏、⠇ 菜单、`打开日志`（列表选择）、`导出日志`（SAF 另存为，写入 Downloads 成功）
 - [x] 设置：19 项逐行显示、`passwd` 掩码、输入弹窗校验、保存后小浮窗「重启服务后生效」
 - [x] 主题：设置里 `theme` 改成**下拉框**（跟随系统 / 浅色 / 深色），选中保存后立即重建界面并切换配色
+- [x] **真机验证（Android 16 / 五邑大学 WYUNET-STUDENT）**：HTTP 全被门户回 200、443 握手 `UNSUPPORTED_PROTOCOL`，日志按顺序打出
+      「外网探测 -> 200」→「HTTPS 失败」→「外网连通测试未通过：不在线」→「探测到门户劫持：…（不是 204）」→
+      「尝试用默认浏览器打开：http://connectivitycheck.gstatic.com/generate_204」，浏览器真的落在校方登录页（截图见上）
+- [x] 打开 App 不再自动启动服务：「开机自启」默认关闭，只有用户手动点「启动」或显式打开该开关才会起
 - [x] eIA 自动打开浏览器：`campus_net` 不匹配 + 落在 `eia_net` 时（实测 10.0.2.0/24），日志打「尝试用默认浏览器打开：http://neverssl.com/」并真的拉起 Chrome；探测不到 BRAS 门户、HTTP 通但 HTTPS 被劫持时同样会拉起
 - [x] 负面状态标红：`需要门户认证` / `探测门户失败` / `认证失败` 等在「当前状态」里显示红色，正常状态仍是绿色
 - [x] 上报 MAC：默认取本机 MAC（`WifiInfo` → `wlan0` 硬件地址），系统抹掉时退化为**固定的**随机 MAC 并写进日志
@@ -233,7 +244,7 @@ adb reverse tcp:7001 tcp:7001 && adb reverse tcp:7002 tcp:7002
 
 | 指标 | 数值 |
 | --- | --- |
-| release APK | **126 KB**（128388 字节） |
+| release APK | **126 KB**（129256 字节，v1.1） |
 | 其中 `classes.dex` | ≈ 80 KB |
 | 冷启动：进程启动 → `onCreate` 结束 | **340 ~ 450 ms** |
 | 冷启动：系统 `Displayed` | 1.4 ~ 1.8 s（本机 SwiftShader 软件渲染模拟器） |

@@ -401,8 +401,18 @@ public class AuthService extends Service {
             }
             // 探测不到 BRAS 门户，多半就是被学校的准入门户挡住了：直接把门户交给浏览器
             boolean inEia = inEiaNet(cfg, net);
-            offerPortal(cfg, net, p.lastRedirect(), inEia, "认证门户探测失败，需要先在门户里完成认证");
-            setPhase("探测门户失败");
+            String candidate = Portal.looksLikePortal(p.lastRedirect()) ? p.lastRedirect() : "";
+            if (candidate.isEmpty()) {
+                candidate = p.detectPortalRedirect();
+            }
+            if (candidate.isEmpty() && net.captivePortal) {
+                // 系统都说有准入门户了：拿一个一定会被劫持的地址当入口，浏览器打开会被重定向到登录页
+                candidate = Portal.PORTAL_ENTRY;
+                logStep("系统检测到准入门户，改用会被劫持的探测地址当入口：" + candidate);
+            }
+            boolean offered = offerPortal(cfg, net, candidate, inEia,
+                    "认证门户探测失败，需要先在门户里完成认证");
+            setPhase(offered ? "需要门户认证" : "探测门户失败");
             sleepSeconds(30);
             return;
         }
@@ -481,13 +491,16 @@ public class AuthService extends Service {
         }
 
         logWarn("外网连通测试未通过：" + probe.summary());
+        if (net.captivePortal) {
+            logWarn("系统也认为这张 Wi-Fi 有准入门户（就是会弹「登录到 xxx」的那个）");
+        }
 
         // 只有"像门户"的跳转才当作门户地址（百度的 http→m.baidu.com 这种不算）
         String redirect = Portal.looksLikePortal(probe.redirect) ? probe.redirect : "";
         if (redirect.isEmpty()) {
             redirect = p.detectPortalRedirect();
         }
-        boolean needPortal = inEia || probe.intercepted || probe.eiaLike;
+        boolean needPortal = inEia || probe.intercepted || probe.eiaLike || net.captivePortal;
         if (!needPortal) {
             logStep("既连不上外网，也没有被劫持到门户；先继续心跳，稍后再测");
             return;
@@ -499,6 +512,12 @@ public class AuthService extends Service {
         }
         if (inEia) {
             logWarn("本机地址 " + net.ipv4 + " 落在 eIA 准入网段 " + eiaNet);
+        }
+        if (redirect.isEmpty()) {
+            // 拿不到门户地址时，用一个"一定会被门户劫持"的地址当入口，
+            // 浏览器打开后会被重定向到登录页（和系统通知点进去的效果一样）
+            redirect = Portal.PORTAL_ENTRY;
+            logStep("拿不到门户地址，改用会被劫持的探测地址当入口：" + redirect);
         }
         offerPortal(cfg, net, redirect, inEia, "需要用浏览器完成首次认证");
     }
@@ -516,11 +535,13 @@ public class AuthService extends Service {
      * <p>优先级：配置里的 {@code eia_portal} → 探测到的门户跳转 → 网关首页（只在确认
      * 是 eIA 时猜这一手）。同一个地址只发布一次，避免每 30 秒重试都把浏览器弹一遍。</p>
      */
-    private void offerPortal(Config cfg, NetInfo net, String candidate, boolean inEia, String reason) {
+    private boolean offerPortal(Config cfg, NetInfo net, String candidate, boolean inEia, String reason) {
         String url = cfg.get("eia_portal").trim();
-        if (url.isEmpty() && candidate != null && !candidate.trim().isEmpty()
-                && Portal.looksLikePortal(candidate)) {
-            url = candidate.trim();
+        if (url.isEmpty() && candidate != null) {
+            String c = candidate.trim();
+            if (!c.isEmpty() && (c.equals(Portal.PORTAL_ENTRY) || Portal.looksLikePortal(c))) {
+                url = c;
+            }
         }
         if (url.isEmpty() && inEia && net.gateway != null && !net.gateway.isEmpty()) {
             // eIA 的门户大多挂在网关上，猜一个总比什么都不给强
@@ -529,12 +550,13 @@ public class AuthService extends Service {
         if (url.isEmpty()) {
             logWarn(reason + "，但拿不到门户地址：请在设置里填写 eia_portal");
             setPhase("需要门户认证");
-            return;
+            return false;
         }
         logWarn(reason);
         logWarn("尝试用默认浏览器打开：" + url);
         setPhase("需要门户认证");
         ServiceState.setPortal(url);
+        return true;
     }
 
     private void keepLoop(Portal p, int netCheck) {

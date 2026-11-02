@@ -25,12 +25,28 @@ import javax.net.ssl.SSLSocketFactory;
  */
 public final class Portal {
 
-    /** 探测在线状态 / 门户跳转用的地址。 */
+    /** 探测在线状态用的地址。 */
     static final String[] DETECT_URLS = {
             "http://connect.rom.miui.com/generate_204",
             "http://www.baidu.com/",
             "http://www.qq.com/",
     };
+
+    /**
+     * 找「准入门户」用的地址。
+     *
+     * <p>国内不少校园门户会把自家能识别的探测地址（{@code connect.rom.miui.com}、
+     * {@code connectivitycheck.gstatic.com} 之类）放进白名单直接放行 204，
+     * 所以这里再补几个无关站点：只要 HTTP 被劫持，任意一个 302 都能拿到门户地址。</p>
+     */
+    static final String[] PORTAL_URLS = {
+            "http://connectivitycheck.gstatic.com/generate_204",
+            "http://www.qq.com/",
+            "http://connect.rom.miui.com/generate_204",
+    };
+
+    /** 什么都探测不到时，拿这个地址当「会被门户劫持」的入口去开浏览器。 */
+    public static final String PORTAL_ENTRY = "http://connectivitycheck.gstatic.com/generate_204";
 
     static final String ACCEPT =
             "text/html,text/xml,application/xhtml+xml,application/x-javascript,*/*";
@@ -395,7 +411,7 @@ public final class Portal {
      * @return 跳转地址；没有跳转或者跳到 BRAS 门户时返回 ""
      */
     public String detectPortalRedirect() {
-        return detectPortalRedirect(DETECT_URLS);
+        return detectPortalRedirect(PORTAL_URLS);
     }
 
     /** 同上，但用调用方给的探测地址（便于用 mock 门户做单元验证）。 */
@@ -411,6 +427,12 @@ public final class Portal {
                         && looksLikePortal(loc)) {
                     note(Log.P_STEP, "探测到门户劫持：" + url + " -> " + loc);
                     return loc;
+                }
+                // generate_204 本该是空 204；回了别的东西说明被门户拦下来了，
+                // 这个地址本身就能当入口（浏览器打开会被重定向到登录页）
+                if (url.contains("generate_204") && r.status != 204) {
+                    note(Log.P_STEP, "探测到门户劫持：" + url + " -> " + r.status + "（不是 204）");
+                    return url;
                 }
             } catch (IOException ignored) {
                 // 换下一个

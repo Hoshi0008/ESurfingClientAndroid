@@ -10,8 +10,8 @@ android {
         applicationId = "com.esurfing.client"
         minSdk = 31
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 11
+        versionName = "1.1"
     }
 
     buildTypes {

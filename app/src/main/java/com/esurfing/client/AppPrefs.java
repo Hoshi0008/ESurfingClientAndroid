@@ -43,7 +43,8 @@ public final class AppPrefs {
     }
 
     public static boolean autoStart(Context c) {
-        return sp(c).getBoolean(KEY_AUTO_START, true);
+        // 默认关闭：打开 App 不会自己把服务拉起来，只有用户明确打开「开机自启」才自启
+        return sp(c).getBoolean(KEY_AUTO_START, false);
     }
 
     public static void setAutoStart(Context c, boolean value) {

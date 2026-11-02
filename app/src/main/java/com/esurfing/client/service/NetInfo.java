@@ -24,13 +24,17 @@ public final class NetInfo {
     public final boolean wifi;
     /** 用于绑定 socket 的 WLAN 网络；没有 WLAN 时为 null。 */
     public final Network wifiNetwork;
+    /** 系统认为这张网有准入门户（就是会弹「登录到 xxx」的那种）。 */
+    public final boolean captivePortal;
     /** 本机 IPv4（优先取 WLAN 的地址）。 */
     public final String ipv4;
     public final String gateway;
 
-    private NetInfo(boolean wifi, Network wifiNetwork, String ipv4, String gateway) {
+    private NetInfo(boolean wifi, Network wifiNetwork, boolean captivePortal,
+                    String ipv4, String gateway) {
         this.wifi = wifi;
         this.wifiNetwork = wifiNetwork;
+        this.captivePortal = captivePortal;
         this.ipv4 = ipv4;
         this.gateway = gateway;
     }
@@ -38,7 +42,7 @@ public final class NetInfo {
     public static NetInfo read(Context ctx) {
         ConnectivityManager cm = (ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
         if (cm == null) {
-            return new NetInfo(false, null, null, null);
+            return new NetInfo(false, null, false, null, null);
         }
         Network wifiNet = null;
         for (Network n : cm.getAllNetworks()) {
@@ -51,11 +55,14 @@ public final class NetInfo {
         }
         Network target = wifiNet != null ? wifiNet : cm.getActiveNetwork();
         if (target == null) {
-            return new NetInfo(false, null, null, null);
+            return new NetInfo(false, null, false, null, null);
         }
+        NetworkCapabilities caps = cm.getNetworkCapabilities(target);
+        boolean captive = caps != null
+                && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_CAPTIVE_PORTAL);
         LinkProperties lp = cm.getLinkProperties(target);
         if (lp == null) {
-            return new NetInfo(wifiNet != null, wifiNet, null, null);
+            return new NetInfo(wifiNet != null, wifiNet, captive, null, null);
         }
         String ip = null;
         String gw = null;
@@ -73,6 +80,6 @@ public final class NetInfo {
                 break;
             }
         }
-        return new NetInfo(wifiNet != null, wifiNet, ip, gw);
+        return new NetInfo(wifiNet != null, wifiNet, captive, ip, gw);
     }
 }
