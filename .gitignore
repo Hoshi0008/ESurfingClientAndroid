@@ -1,11 +1,19 @@
-﻿# 构建
+# 构建产物
 /build/
 /app/build/
-/tools/devtest/out/
-/app/src/main/java/com/esurfing/client/core/Algos.java.bak
+/.gradle/
+/.kotlin/
+/.idea/
+*.iml
+local.properties
+
 # 本地测试产物
+/tools/devtest/out/
 *.apk
 *.keystore
 *.jks
-local.properties
 .secrets/
+
+# 系统文件
+.DS_Store
+Thumbs.db

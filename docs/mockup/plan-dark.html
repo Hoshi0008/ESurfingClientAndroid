@@ -1,0 +1,170 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>ESurfing 校园网客户端 · 界面方案（深色）</title>
+<link rel="stylesheet" href="mockup.css">
+</head>
+<body>
+<div class="page">
+
+  <!-- ============ 1. 首次使用 ============ -->
+  <div class="col">
+    <div class="caption"><b>④ 首次使用</b> · 输入账号密码（深色）</div>
+    <div class="phone dark">
+      <div class="bg"></div>
+      <div class="statusbar"><span>22:41</span><span class="icons">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2.5 8.5a15 15 0 0 1 19 0"/><path d="M6 12a10 10 0 0 1 12 0"/><path d="M9.5 15.5a5 5 0 0 1 5 0"/><circle cx="12" cy="19" r="1.1" fill="currentColor" stroke="none"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="17" height="10" rx="3"/><rect x="4" y="9" width="11" height="6" rx="1.6" fill="currentColor" stroke="none"/><path d="M21 11v2"/></svg>
+      </span></div>
+      <div class="content">
+        <div class="head">
+          <div class="logo"></div>
+          <div class="title">校园网<small>广东天翼 · cdcportal</small></div>
+          <div class="spacer"></div>
+          <div class="chip"><i class="dot"></i>CampusWiFi</div>
+        </div>
+
+        <div class="card setup">
+          <div class="state neutral" style="font-size:20px">首次使用</div>
+          <div class="desc">请输入校园网账号与密码，保存后即可启动认证服务。</div>
+          <div class="input ph">账号（学号）</div>
+          <div class="input ph">密码</div>
+          <div style="text-align:center"><button class="btn primary" style="margin-top:22px;min-width:180px">确认</button></div>
+        </div>
+
+        <div class="push"></div><div class="card info" style="margin-top:16px">
+          <div class="row"><span class="k">配置文件</span><span class="v mono">esurfing.conf</span></div>
+          <div class="row"><span class="k">日志目录</span><span class="v mono">logs/</span></div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab on">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19z"/><path d="M9.5 20.5v-6h5v6"/></svg>
+          <span>主界面</span>
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 6.5h14M5 12h14M5 17.5h9"/></svg>
+          <span>日志</span>
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8h10M18 8h2M4 16h4M12 16h8"/><circle cx="16" cy="8" r="2.2"/><circle cx="10" cy="16" r="2.2"/></svg>
+          <span>设置</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2. 主界面 · 运行中（深色） ============ -->
+  <div class="col">
+    <div class="caption"><b>⑤ 主界面</b> · 服务运行中（深色）</div>
+    <div class="phone dark">
+      <div class="bg"></div>
+      <div class="statusbar"><span>22:41</span><span class="icons">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2.5 8.5a15 15 0 0 1 19 0"/><path d="M6 12a10 10 0 0 1 12 0"/><path d="M9.5 15.5a5 5 0 0 1 5 0"/><circle cx="12" cy="19" r="1.1" fill="currentColor" stroke="none"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="17" height="10" rx="3"/><rect x="4" y="9" width="11" height="6" rx="1.6" fill="currentColor" stroke="none"/><path d="M21 11v2"/></svg>
+      </span></div>
+      <div class="content">
+        <div class="head">
+          <div class="logo"></div>
+          <div class="title">校园网<small>广东天翼 · cdcportal</small></div>
+          <div class="spacer"></div>
+          <div class="chip"><i class="dot"></i>CampusWiFi</div>
+        </div>
+
+        <div class="card status-card">
+          <div class="state green"><span class="halo"></span>服务运行中</div>
+          <div class="start-time">服务启动时间 <b>22:38:07</b></div>
+          <button class="btn primary">重新启动服务</button>
+        </div>
+
+        <div class="card info">
+          <div class="row"><span class="k">本机地址</span><span class="v mono">192.168.88.23</span></div>
+          <div class="row"><span class="k">认证服务器</span><span class="v mono">10.1.1.1:7001</span></div>
+          <div class="row"><span class="k">心跳</span><span class="v">300 秒 · 正常</span></div>
+        </div>
+
+        <div class="push"></div><div class="section-title">后台保活</div>
+        <div class="card info" style="margin-top:0">
+          <div class="row"><span class="k">前台服务 + 常驻通知</span><span class="v" style="color:var(--green)">已开启</span></div>
+          <div class="row"><span class="k">电池优化白名单</span><span class="v" style="color:var(--green)">已授权</span></div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab on">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19z"/><path d="M9.5 20.5v-6h5v6"/></svg>
+          <span>主界面</span>
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 6.5h14M5 12h14M5 17.5h9"/></svg>
+          <span>日志</span>
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8h10M18 8h2M4 16h4M12 16h8"/><circle cx="16" cy="8" r="2.2"/><circle cx="10" cy="16" r="2.2"/></svg>
+          <span>设置</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 3. 日志 · 下拉菜单 ============ -->
+  <div class="col">
+    <div class="caption"><b>⑥ 日志</b> · 顶部 Frame + ⋮ 下拉菜单（深色）</div>
+    <div class="phone dark">
+      <div class="bg"></div>
+      <div class="statusbar"><span>22:41</span><span class="icons">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2.5 8.5a15 15 0 0 1 19 0"/><path d="M6 12a10 10 0 0 1 12 0"/><path d="M9.5 15.5a5 5 0 0 1 5 0"/><circle cx="12" cy="19" r="1.1" fill="currentColor" stroke="none"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="17" height="10" rx="3"/><rect x="4" y="9" width="11" height="6" rx="1.6" fill="currentColor" stroke="none"/><path d="M21 11v2"/></svg>
+      </span></div>
+      <div class="content" style="padding:0 0 100px">
+        <div class="topbar">
+          <div class="headline">当前日志</div>
+          <div class="dots">⋮</div>
+          <div class="menu">
+            <div>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2.5h8.5A1.5 1.5 0 0 1 21 10v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18z"/></svg>
+              打开日志
+            </div>
+            <div>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5"/><path d="M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15"/></svg>
+              导出日志
+            </div>
+          </div>
+        </div>
+        <div class="logbox">
+          <div class="inner"><span class="t">[2026-11-02 22:38:07]</span> <span class="info">[*]</span> 启动认证服务（Android）
+<span class="t">[2026-11-02 22:38:07]</span> <span class="step">[i]</span> 本机地址 192.168.88.23 网卡 wlan0
+<span class="t">[2026-11-02 22:38:07]</span> <span class="step">[i]</span> 探测 http://connect.rom.miui.com/generate_204
+<span class="t">[2026-11-02 22:38:08]</span> <span class="ok">[+]</span> 发现门户跳转 wlanacip=10.1.1.1
+<span class="t">[2026-11-02 22:38:08]</span> <span class="info">[*]</span> POST http://10.1.1.1:7001/ticket.cgi -&gt; 200 Error-Code=200 len=49
+<span class="t">[2026-11-02 22:38:08]</span> <span class="info">[*]</span> 丢弃 ZSM Algo-ID=014AC5DB…（黑名单）
+<span class="t">[2026-11-02 22:38:08]</span> <span class="ok">[+]</span> 采用 Algo-ID 066474E5…（第 3 次）
+<span class="t">[2026-11-02 22:38:08]</span> <span class="ok">[+]</span> 取到 ticket（14 字符）
+<span class="t">[2026-11-02 22:38:09]</span> <span class="ok">[+]</span> 登录请求已受理
+<span class="t">[2026-11-02 22:38:09]</span> <span class="step">[i]</span> keep-url = http://10.1.1.142:7001/keep.cgi
+<span class="t">[2026-11-02 22:38:09]</span> <span class="ok">[+]</span> 认证成功，开始心跳（300 秒）
+<span class="t">[2026-11-02 22:43:09]</span> <span class="info">[*]</span> 心跳正常，下次 300 秒后
+</div>
+        </div>
+        <div class="toast" style="bottom:120px"><span class="ck">✓</span>日志已导出</div>
+      </div>
+      <div class="tabbar">
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19z"/><path d="M9.5 20.5v-6h5v6"/></svg>
+          <span>主界面</span>
+        </div>
+        <div class="tab on">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 6.5h14M5 12h14M5 17.5h9"/></svg>
+          <span>日志</span>
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8h10M18 8h2M4 16h4M12 16h8"/><circle cx="16" cy="8" r="2.2"/><circle cx="10" cy="16" r="2.2"/></svg>
+          <span>设置</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

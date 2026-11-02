@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 启动窗口的底色：与 App 内渐变背景一致，避免白屏闪烁 -->
+    <color name="bg_start">#EEF4FD</color>
+    <color name="bg_end">#D7E2F4</color>
+    <color name="ic_launcher_bg">#1F6BFF</color>
+</resources>

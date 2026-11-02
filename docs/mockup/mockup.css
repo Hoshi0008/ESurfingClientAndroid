@@ -1,0 +1,223 @@
+﻿/* ESurfing 校园网客户端 —— 界面方案示意图样式
+   仅用于给用户看设计，不含真实逻辑。 */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI", "Noto Sans SC", sans-serif;
+  background: #06080c;
+  color: #eaf0fa;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page { padding: 24px; display: flex; gap: 20px; align-items: flex-start; }
+.col { display: flex; flex-direction: column; gap: 10px; }
+.caption { font-size: 13px; letter-spacing: .5px; color: #8d99ad; padding-left: 6px; height: 22px; }
+.caption b { color: #cfd8e6; font-weight: 600; }
+
+/* ---------------- 手机外框 ---------------- */
+.phone {
+  position: relative; width: 412px; height: 915px; border-radius: 44px; overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .55), 0 0 0 1px rgba(255, 255, 255, .07);
+  isolation: isolate;
+}
+
+/* ---------------- 主题变量 ---------------- */
+.light {
+  --bg1: #eef4fd; --bg2: #dfe8f7; --bg3: #d7e2f4;
+  --glow1: rgba(104, 156, 255, .55); --glow2: rgba(97, 226, 208, .38);
+  --txt: #101828; --sub: #55607a; --muted: #8b95aa;
+  --card: rgba(255, 255, 255, .66); --card-border: rgba(255, 255, 255, .92);
+  --card-shadow: 0 14px 34px rgba(31, 56, 102, .13);
+  --accent1: #1f6bff; --accent2: #12b8e8;
+  --red: #e5484d; --green: #12996b; --yellow: #f7c948; --on-yellow: #3d2f00;
+  --bar: rgba(255, 255, 255, .72); --bar-border: rgba(255, 255, 255, .95);
+  --chip: rgba(31, 107, 255, .1); --chip-txt: #1f6bff;
+  --divider: rgba(16, 24, 40, .08);
+  --input: rgba(255, 255, 255, .82); --input-border: rgba(16, 24, 40, .1);
+  --logbg: rgba(13, 20, 33, .92); --logfg: #d6e2f5;
+}
+.dark {
+  --bg1: #0a0f18; --bg2: #0d1524; --bg3: #0f1a2b;
+  --glow1: rgba(41, 92, 255, .42); --glow2: rgba(15, 163, 163, .3);
+  --txt: #eaf0fa; --sub: #a5b1c6; --muted: #6e7b93;
+  --card: rgba(23, 31, 46, .62); --card-border: rgba(255, 255, 255, .09);
+  --card-shadow: 0 16px 40px rgba(0, 0, 0, .45);
+  --accent1: #4d8bff; --accent2: #22c7e8;
+  --red: #ff6b6e; --green: #34d399; --yellow: #ffd34e; --on-yellow: #241c00;
+  --bar: rgba(18, 26, 40, .72); --bar-border: rgba(255, 255, 255, .08);
+  --chip: rgba(77, 139, 255, .16); --chip-txt: #8fb5ff;
+  --divider: rgba(255, 255, 255, .08);
+  --input: rgba(11, 17, 28, .7); --input-border: rgba(255, 255, 255, .12);
+  --logbg: rgba(6, 10, 17, .85); --logfg: #cbd8ec;
+}
+
+/* ---------------- 背景 ---------------- */
+.bg { position: absolute; inset: 0; z-index: 0;
+  background: linear-gradient(165deg, var(--bg1) 0%, var(--bg2) 52%, var(--bg3) 100%); }
+.bg::before, .bg::after { content: ""; position: absolute; border-radius: 50%; filter: blur(10px); }
+.bg::before { width: 460px; height: 460px; left: -150px; top: -170px;
+  background: radial-gradient(circle, var(--glow1) 0%, transparent 68%); }
+.bg::after { width: 420px; height: 420px; right: -140px; bottom: -120px;
+  background: radial-gradient(circle, var(--glow2) 0%, transparent 70%); }
+
+/* ---------------- 状态栏 ---------------- */
+.statusbar { position: relative; z-index: 2; height: 44px; padding: 0 26px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 12.5px; color: var(--sub); font-weight: 600; }
+.statusbar .icons { display: flex; gap: 6px; align-items: center; opacity: .85; }
+.statusbar svg { width: 15px; height: 15px; }
+
+/* ---------------- 内容 ---------------- */
+.content { position: relative; z-index: 2; padding: 6px 22px 104px; height: calc(100% - 44px);
+  display: flex; flex-direction: column; }
+
+.head { display: flex; align-items: center; gap: 12px; padding: 8px 2px 18px; }
+.logo { width: 42px; height: 42px; border-radius: 13px;
+  background: linear-gradient(140deg, var(--accent1), var(--accent2));
+  box-shadow: 0 8px 20px rgba(31, 107, 255, .35); position: relative; flex: 0 0 auto; }
+.logo::after { content: ""; position: absolute; inset: 12px; border-radius: 50%;
+  border: 2.5px solid rgba(255, 255, 255, .92); border-right-color: transparent;
+  border-bottom-color: transparent; transform: rotate(-45deg); }
+.title { font-size: 19px; font-weight: 700; color: var(--txt); letter-spacing: .3px; }
+.title small { display: block; font-size: 11.5px; font-weight: 500; color: var(--muted);
+  margin-top: 3px; letter-spacing: .2px; }
+.spacer { flex: 1; }
+.chip { font-size: 11.5px; color: var(--chip-txt); background: var(--chip);
+  padding: 6px 11px; border-radius: 999px; font-weight: 600; white-space: nowrap;
+  display: flex; align-items: center; gap: 5px; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* ---------------- 卡片 ---------------- */
+.card { background: var(--card); border: 1px solid var(--card-border);
+  border-radius: 24px; box-shadow: var(--card-shadow); backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px); padding: 26px 22px; }
+
+.status-card { text-align: center; padding: 34px 22px 30px; }
+.state { font-size: 27px; font-weight: 800; letter-spacing: .5px; }
+.state.red { color: var(--red); }
+.state.green { color: var(--green); }
+.state.neutral { color: var(--txt); }
+.state .halo { display: inline-block; width: 9px; height: 9px; border-radius: 50%;
+  background: currentColor; margin-right: 9px; vertical-align: middle;
+  box-shadow: 0 0 0 5px color-mix(in srgb, currentColor 18%, transparent); }
+.state-note { margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+.start-time { margin-top: 12px; font-size: 13px; color: var(--sub); }
+.start-time b { font-family: "Cascadia Mono", Consolas, monospace; font-size: 15px;
+  color: var(--txt); letter-spacing: 1px; font-weight: 600; }
+
+.btn { border: 0; cursor: default; font-family: inherit; font-weight: 700;
+  border-radius: 999px; font-size: 15.5px; padding: 0 34px; height: 50px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn.yellow { background: linear-gradient(180deg, #ffe07a, var(--yellow)); color: var(--on-yellow);
+  box-shadow: 0 10px 26px rgba(247, 201, 72, .38), inset 0 1px 0 rgba(255, 255, 255, .6); }
+.btn.primary { background: linear-gradient(140deg, var(--accent1), var(--accent2)); color: #fff;
+  box-shadow: 0 12px 28px rgba(31, 107, 255, .35); }
+.btn.ghost { background: transparent; color: var(--sub); font-weight: 600; }
+.btn.block { width: 100%; }
+.btn.small { height: 42px; font-size: 14px; padding: 0 24px; }
+.card .btn { margin-top: 22px; }
+
+/* ---------------- 信息卡 ---------------- */
+.info { margin-top: 16px; padding: 6px 20px; }
+.info .row { display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 0; border-bottom: 1px solid var(--divider); font-size: 13px; }
+.info .row:last-child { border-bottom: 0; }
+.info .k { color: var(--muted); }
+.info .v { color: var(--txt); font-weight: 600; font-variant-numeric: tabular-nums; }
+.info .v.mono { font-family: "Cascadia Mono", Consolas, monospace; letter-spacing: .3px; }
+
+.section-title { font-size: 12px; color: var(--muted); letter-spacing: 1.4px;
+  padding: 20px 4px 10px; text-transform: uppercase; }
+
+/* ---------------- 输入 ---------------- */
+.input { width: 100%; height: 50px; border-radius: 15px; background: var(--input);
+  border: 1px solid var(--input-border); color: var(--txt); font-size: 15px;
+  font-family: inherit; padding: 0 16px; display: flex; align-items: center; }
+.input.ph { color: var(--muted); }
+.input + .input { margin-top: 12px; }
+.setup .desc { font-size: 13px; color: var(--sub); margin: 8px 0 20px; line-height: 1.6; }
+.setup { padding: 28px 22px; }
+
+/* ---------------- 底部选项卡 ---------------- */
+.tabbar { position: absolute; z-index: 3; left: 16px; right: 16px; bottom: 18px; height: 66px;
+  border-radius: 24px; background: var(--bar); border: 1px solid var(--bar-border);
+  box-shadow: 0 16px 40px rgba(9, 18, 36, .22); backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px); display: flex; align-items: center; padding: 7px; gap: 6px; }
+.tab { flex: 1; height: 52px; border-radius: 18px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 3px; color: var(--muted);
+  font-size: 10.5px; font-weight: 600; }
+.tab svg { width: 21px; height: 21px; }
+.tab.on { color: var(--accent1); background: color-mix(in srgb, var(--accent1) 12%, transparent); }
+.tab.on svg { filter: drop-shadow(0 3px 8px rgba(31, 107, 255, .35)); }
+
+/* ---------------- 日志页 ---------------- */
+.topbar { position: relative; z-index: 3; display: flex; align-items: center;
+  padding: 10px 20px 14px; }
+.topbar .headline { position: absolute; left: 0; right: 0; text-align: center;
+  font-size: 16px; font-weight: 700; color: var(--txt); pointer-events: none; }
+.dots { margin-left: auto; z-index: 2; width: 38px; height: 38px; border-radius: 12px;
+  border: 1px solid var(--card-border); background: var(--card); color: var(--txt);
+  font-size: 19px; line-height: 1; display: flex; align-items: center;
+  justify-content: center; font-weight: 700; }
+.menu { position: absolute; right: 20px; top: 56px; width: 168px; border-radius: 16px;
+  background: var(--card); border: 1px solid var(--card-border); box-shadow: var(--card-shadow);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); padding: 7px; z-index: 6; }
+.menu div { padding: 12px 14px; border-radius: 11px; font-size: 13.5px; color: var(--txt);
+  display: flex; align-items: center; gap: 9px; }
+.menu div + div { margin-top: 2px; }
+.menu div svg { width: 15px; height: 15px; opacity: .8; }
+
+.logbox { position: relative; z-index: 2; margin: 0 16px; border-radius: 20px;
+  background: var(--logbg); border: 1px solid var(--card-border); overflow: hidden;
+  flex: 1 1 auto; min-height: 0; box-shadow: var(--card-shadow); }
+.logbox .inner { padding: 15px 14px; font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 10.5px; line-height: 1.75; color: var(--logfg); white-space: pre-wrap;
+  word-break: break-all; }
+.logbox .t { opacity: .55; }
+.logbox .ok { color: #45d99f; }
+.logbox .info { color: #7fb2ff; }
+.logbox .warn { color: #ffcf5c; }
+.logbox .step { color: #b39cff; }
+
+/* ---------------- 设置页 ---------------- */
+.list { border-radius: 22px; background: var(--card); border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow); backdrop-filter: blur(18px); overflow: hidden; }
+.item { display: flex; align-items: center; gap: 12px; padding: 15px 18px;
+  border-bottom: 1px solid var(--divider); }
+.item:last-child { border-bottom: 0; }
+.item .name { display: flex; flex-direction: column; gap: 3px; min-width: 0; width: 118px; }
+.item .name b { font-size: 13.5px; color: var(--txt); font-weight: 700;
+  font-family: "Cascadia Mono", Consolas, monospace; letter-spacing: .2px; }
+.item .name span { font-size: 10.5px; color: var(--muted); }
+.item .val { flex: 1; font-size: 13px; color: var(--sub); text-align: right;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item .edit { color: var(--accent1); font-size: 13px; font-weight: 700; flex: 0 0 auto; }
+
+/* ---------------- 弹窗（磨砂 + 高斯模糊） ---------------- */
+.scrim { position: absolute; inset: 0; z-index: 8; background: rgba(8, 12, 20, .28);
+  backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+.dialog { position: absolute; z-index: 9; left: 30px; right: 30px; top: 292px;
+  border-radius: 26px; padding: 24px 22px 20px;
+  background: rgba(255, 255, 255, .74); border: 1px solid rgba(255, 255, 255, .85);
+  box-shadow: 0 30px 70px rgba(9, 18, 36, .38);
+  backdrop-filter: blur(30px) saturate(160%); -webkit-backdrop-filter: blur(30px) saturate(160%); }
+.dark .dialog { background: rgba(28, 38, 56, .8); border-color: rgba(255, 255, 255, .1);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, .6); }
+.dialog h3 { font-size: 17px; color: var(--txt); font-weight: 700; margin-bottom: 6px; }
+.dialog p { font-size: 12px; color: var(--muted); margin-bottom: 16px; line-height: 1.55; }
+.dialog .actions { display: flex; justify-content: flex-end; gap: 4px; margin-top: 20px; }
+
+/* ---------------- 小浮窗（逐渐消失） ---------------- */
+.toast { position: absolute; z-index: 10; left: 50%; bottom: 108px; transform: translateX(-50%);
+  background: rgba(16, 22, 34, .9); color: #f2f6ff; font-size: 12.5px; font-weight: 600;
+  padding: 11px 20px; border-radius: 999px; white-space: nowrap;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .35); border: 1px solid rgba(255, 255, 255, .1); }
+.toast .ck { color: #45d99f; margin-right: 6px; }
+
+/* ---------------- 标注 ---------------- */
+.badge { position: absolute; z-index: 11; right: 14px; top: 14px; font-size: 10.5px;
+  padding: 5px 10px; border-radius: 999px; background: rgba(6, 8, 12, .62); color: #fff;
+  font-weight: 600; letter-spacing: .3px; backdrop-filter: blur(6px); }
+
+/* 把内容推到下方的弹性空白 */
+.push { flex: 1 1 auto; min-height: 6px; }

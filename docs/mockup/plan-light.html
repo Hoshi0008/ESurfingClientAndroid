@@ -1,0 +1,169 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>ESurfing 校园网客户端 · 界面方案（浅色）</title>
+<link rel="stylesheet" href="mockup.css">
+</head>
+<body>
+<div class="page">
+
+  <!-- ============ 1. 主界面 · 未启动 ============ -->
+  <div class="col">
+    <div class="caption"><b>① 主界面</b> · 未启动服务（浅色）</div>
+    <div class="phone light">
+      <div class="bg"></div>
+      <div class="statusbar"><span>22:41</span><span class="icons">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2.5 8.5a15 15 0 0 1 19 0"/><path d="M6 12a10 10 0 0 1 12 0"/><path d="M9.5 15.5a5 5 0 0 1 5 0"/><circle cx="12" cy="19" r="1.1" fill="currentColor" stroke="none"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="17" height="10" rx="3"/><rect x="4" y="9" width="11" height="6" rx="1.6" fill="currentColor" stroke="none"/><path d="M21 11v2"/></svg>
+      </span></div>
+      <div class="content">
+        <div class="head">
+          <div class="logo"></div>
+          <div class="title">校园网<small>广东天翼 · cdcportal</small></div>
+          <div class="spacer"></div>
+          <div class="chip"><i class="dot"></i>CampusWiFi</div>
+        </div>
+
+        <div class="card status-card">
+          <div class="state red"><span class="halo"></span>未启动服务</div>
+          <button class="btn yellow">启动</button>
+        </div>
+
+        <div class="card info">
+          <div class="row"><span class="k">本机地址</span><span class="v mono">192.168.88.23</span></div>
+          <div class="row"><span class="k">认证服务器</span><span class="v mono">10.1.1.1:7001</span></div>
+          <div class="row"><span class="k">账号</span><span class="v">20230001</span></div>
+        </div>
+
+        <div class="push"></div><div class="section-title">后台保活</div>
+        <div class="card info" style="margin-top:0">
+          <div class="row"><span class="k">前台服务 + 常驻通知</span><span class="v" style="color:var(--green)">已开启</span></div>
+          <div class="row"><span class="k">电池优化白名单</span><span class="v">点此授权 ›</span></div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab on">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19z"/><path d="M9.5 20.5v-6h5v6"/></svg>
+          <span>主界面</span>
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 6.5h14M5 12h14M5 17.5h9"/></svg>
+          <span>日志</span>
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8h10M18 8h2M4 16h4M12 16h8"/><circle cx="16" cy="8" r="2.2"/><circle cx="10" cy="16" r="2.2"/></svg>
+          <span>设置</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2. 主界面 · 运行中 ============ -->
+  <div class="col">
+    <div class="caption"><b>② 主界面</b> · 服务运行中 + 启动时间</div>
+    <div class="phone light">
+      <div class="bg"></div>
+      <div class="statusbar"><span>22:41</span><span class="icons">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2.5 8.5a15 15 0 0 1 19 0"/><path d="M6 12a10 10 0 0 1 12 0"/><path d="M9.5 15.5a5 5 0 0 1 5 0"/><circle cx="12" cy="19" r="1.1" fill="currentColor" stroke="none"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="17" height="10" rx="3"/><rect x="4" y="9" width="11" height="6" rx="1.6" fill="currentColor" stroke="none"/><path d="M21 11v2"/></svg>
+      </span></div>
+      <div class="content">
+        <div class="head">
+          <div class="logo"></div>
+          <div class="title">校园网<small>广东天翼 · cdcportal</small></div>
+          <div class="spacer"></div>
+          <div class="chip"><i class="dot"></i>CampusWiFi</div>
+        </div>
+
+        <div class="card status-card">
+          <div class="state green"><span class="halo"></span>服务运行中</div>
+          <div class="start-time">服务启动时间 <b>22:38:07</b></div>
+          <button class="btn primary">重新启动服务</button>
+        </div>
+
+        <div class="card info">
+          <div class="row"><span class="k">本机地址</span><span class="v mono">192.168.88.23</span></div>
+          <div class="row"><span class="k">认证服务器</span><span class="v mono">10.1.1.1:7001</span></div>
+          <div class="row"><span class="k">心跳</span><span class="v">300 秒 · 正常</span></div>
+        </div>
+
+        <div class="push"></div><div class="section-title">后台保活</div>
+        <div class="card info" style="margin-top:0">
+          <div class="row"><span class="k">前台服务 + 常驻通知</span><span class="v" style="color:var(--green)">已开启</span></div>
+          <div class="row"><span class="k">电池优化白名单</span><span class="v" style="color:var(--green)">已授权</span></div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab on">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19z"/><path d="M9.5 20.5v-6h5v6"/></svg>
+          <span>主界面</span>
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 6.5h14M5 12h14M5 17.5h9"/></svg>
+          <span>日志</span>
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8h10M18 8h2M4 16h4M12 16h8"/><circle cx="16" cy="8" r="2.2"/><circle cx="10" cy="16" r="2.2"/></svg>
+          <span>设置</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 3. 设置 · 修改弹窗 ============ -->
+  <div class="col">
+    <div class="caption"><b>③ 设置</b> · 修改弹窗（磨砂 + 模糊）+ 小浮窗</div>
+    <div class="phone light">
+      <div class="bg"></div>
+      <div class="statusbar"><span>22:41</span><span class="icons">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2.5 8.5a15 15 0 0 1 19 0"/><path d="M6 12a10 10 0 0 1 12 0"/><path d="M9.5 15.5a5 5 0 0 1 5 0"/><circle cx="12" cy="19" r="1.1" fill="currentColor" stroke="none"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="17" height="10" rx="3"/><rect x="4" y="9" width="11" height="6" rx="1.6" fill="currentColor" stroke="none"/><path d="M21 11v2"/></svg>
+      </span></div>
+      <div class="content">
+        <div class="head" style="padding-bottom:10px">
+          <div class="title" style="font-size:21px">设置<small>所有配置项，点击「修改」即时写入配置文件</small></div>
+        </div>
+        <div class="list">
+          <div class="item"><div class="name"><b>user</b><span>账号</span></div><div class="val">20230001</div><div class="edit">修改</div></div>
+          <div class="item"><div class="name"><b>passwd</b><span>密码</span></div><div class="val">pass1234</div><div class="edit">修改</div></div>
+          <div class="item"><div class="name"><b>channel</b><span>通道</span></div><div class="val">android</div><div class="edit">修改</div></div>
+          <div class="item"><div class="name"><b>servers</b><span>认证服务器</span></div><div class="val">10.1.1.1</div><div class="edit">修改</div></div>
+          <div class="item"><div class="name"><b>port</b><span>门户端口</span></div><div class="val">7001</div><div class="edit">修改</div></div>
+          <div class="item"><div class="name"><b>campus_net</b><span>天翼网段</span></div><div class="val">10.0.0.0/8</div><div class="edit">修改</div></div>
+          <div class="item"><div class="name"><b>interval_min</b><span>心跳下限</span></div><div class="val">20</div><div class="edit">修改</div></div>
+          <div class="item"><div class="name"><b>theme</b><span>主题</span></div><div class="val">auto</div><div class="edit">修改</div></div>
+        </div>
+      </div>
+
+      <div class="scrim"></div>
+      <div class="dialog">
+        <h3>修改campus_net</h3>
+        <p>天翼网段：如 10.0.0.0/8；只有落在此网段才认证</p>
+        <div class="input">10.0.0.0/8</div>
+        <div class="actions">
+          <button class="btn ghost small">取消</button>
+          <button class="btn primary small">保存</button>
+        </div>
+      </div>
+      <div class="toast"><span class="ck">✓</span>重启服务后生效</div>
+      <div class="tabbar">
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19z"/><path d="M9.5 20.5v-6h5v6"/></svg>
+          <span>主界面</span>
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 6.5h14M5 12h14M5 17.5h9"/></svg>
+          <span>日志</span>
+        </div>
+        <div class="tab on">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8h10M18 8h2M4 16h4M12 16h8"/><circle cx="16" cy="8" r="2.2"/><circle cx="10" cy="16" r="2.2"/></svg>
+          <span>设置</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
