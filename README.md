@@ -193,7 +193,12 @@ adb reverse tcp:7001 tcp:7001 && adb reverse tcp:7002 tcp:7002
 - [x] 日志：实时追加、自动滚屏、⠇ 菜单、`打开日志`（列表选择）、`导出日志`（SAF 另存为，写入 Downloads 成功）
 - [x] 设置：19 项逐行显示、`passwd` 掩码、输入弹窗校验、保存后小浮窗「重启服务后生效」
 - [x] 主题：设置里 `theme` 改成**下拉框**（跟随系统 / 浅色 / 深色），选中保存后立即重建界面并切换配色
-- [x] eIA 判定：`DevMain redirect` 用 mock 门户验证——跳到不含 `wlanuserip` 的门户判为 eIA，跳到 BRAS 门户不误判
+- [x] eIA 判定（单元）：`DevMain redirect` 用 mock 门户验证——跳到不含 `wlanuserip` 的门户判为 eIA，跳到 BRAS 门户不误判
+- [x] eIA 判定（端到端）：模拟器里用 `iptables` 屏蔽 80 端口伪造"外网不通"，并设 `eia_net=10.0.2.0/24`、
+      `eia_portal=http://neverssl.com`，服务日志出现「判断为学校 eIA 准入网 / 尝试用默认浏览器打开」，
+      顶层 Activity 变为 `com.android.chrome`（浏览器被成功拉起）
+
+![eIA 判定](docs/shots/eia-log.png)
 - [x] 保活：`dumpsys activity services` 显示 `isForeground=true`；应用更新（MY_PACKAGE_REPLACED）后自动重启服务
 - [x] 电池优化：点「点此授权」→ 拉起系统 `RequestIgnoreBatteryOptimizations`
 - [x] 长跑：登录后 60 秒首次心跳、随后按服务端 `interval=300` 续约，4 分钟内无多余重认证；
