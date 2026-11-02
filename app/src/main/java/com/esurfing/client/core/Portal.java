@@ -93,6 +93,13 @@ public final class Portal {
 
     private int port = 7001;
 
+    /** 把请求固定到 WLAN 网络；Android 侧注入，桌面测试时为 null。 */
+    private SocketBinder binder;
+
+    public void setSocketBinder(SocketBinder binder) {
+        this.binder = binder;
+    }
+
     public Portal(String ip, String mac, String channel, String schoolid, String domain,
                   String area, int port) {
         this.ip = ip == null ? "" : ip;
@@ -192,7 +199,7 @@ public final class Portal {
     public String discover(List<String> servers) {
         for (String url : DETECT_URLS) {
             try {
-                Http.Response r = Http.request("GET", url, null, uaHeaders(), localIp, timeoutMs);
+                Http.Response r = Http.request("GET", url, null, uaHeaders(), localIp, timeoutMs, binder);
                 String loc = r.header("location");
                 if (loc != null && loc.startsWith("http")) {
                     lastRedirect = loc;
@@ -229,7 +236,7 @@ public final class Portal {
         for (String srv : candidates) {
             try {
                 String url = "http://" + srv + ":" + port + "/index.cgi?wlanuserip=" + ip;
-                Http.Response r = Http.request("GET", url, null, uaHeaders(), localIp, timeoutMs);
+                Http.Response r = Http.request("GET", url, null, uaHeaders(), localIp, timeoutMs, binder);
                 String txt = new String(r.body, StandardCharsets.UTF_8);
                 String acip = regex(txt, "wlanacip=([0-9]{1,3}(?:\\.[0-9]{1,3}){3})");
                 if (acip != null) {
@@ -284,7 +291,7 @@ public final class Portal {
         Probe result = new Probe();
         for (String url : DETECT_URLS) {
             try {
-                Http.Response r = Http.request("GET", url, null, uaHeaders(), localIp, 6000);
+                Http.Response r = Http.request("GET", url, null, uaHeaders(), localIp, 6000, binder);
                 String loc = r.header("location");
                 note(Log.P_INFO, "外网探测 " + url + " -> " + r.status
                         + (loc == null || loc.isEmpty() ? "" : "，跳转 " + loc));
@@ -337,7 +344,7 @@ public final class Portal {
         }
         for (String url : urls) {
             try {
-                Http.Response r = Http.request("GET", url, null, uaHeaders(), localIp, 6000);
+                Http.Response r = Http.request("GET", url, null, uaHeaders(), localIp, 6000, binder);
                 String loc = r.header("location");
                 if (loc != null && loc.startsWith("http") && !loc.contains("wlanuserip")) {
                     note(Log.P_STEP, "探测到门户劫持：" + url + " -> " + loc);
@@ -375,7 +382,7 @@ public final class Portal {
         // 门户页面里可能覆盖 ticket-url（少数校区）
         try {
             String url = base + "/index.cgi?wlanuserip=" + ip + "&wlanacip=" + acip;
-            Http.Response r = Http.request("GET", url, null, uaHeaders(), localIp, 8000);
+            Http.Response r = Http.request("GET", url, null, uaHeaders(), localIp, 8000, binder);
             String html = new String(r.body, StandardCharsets.UTF_8);
             if (html.contains("config.campus.js.chinatelecom.com")) {
                 String start = "<!--//config.campus.js.chinatelecom.com";
@@ -590,7 +597,7 @@ public final class Portal {
         h.put("CDC-SchoolId", schoolid);
         h.put("CDC-Domain", domain);
         h.put("CDC-Area", area);
-        Http.Response r = Http.post(url, body, h, localIp, timeoutMs);
+        Http.Response r = Http.post(url, body, h, localIp, timeoutMs, binder);
         note(Log.P_INFO, "POST " + shortUrl(url) + " -> " + r.status
                 + " Error-Code=" + r.header("error-code") + " len=" + r.length());
         return r;

@@ -12,20 +12,25 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 
 /**
- * 读取当前网络的本机 IPv4 与默认网关。
+ * 读取当前网络的本机 IPv4、默认网关，以及「当前走的是不是 WLAN」。
  *
- * <p>优先取 WiFi 网络（校园网就是这张网），取不到再退回系统默认网络。
- * MAC 地址在 Android 上拿不到真实值，由 {@code IpUtil.randomMac()} 生成，
- * 协议本身也不校验它。</p>
+ * <p>校园网认证只应发生在 WLAN 上：{@link #wifiNetwork} 非空时，认证与
+ * 外网探测都会把这个 socket 绑到该网络（{@code Network.bindSocket}），
+ * 从而保证即使移动数据是默认网络，流量也不会跑到蜂窝上。</p>
  */
 public final class NetInfo {
 
+    /** 是否存在一条可用的 WLAN 连接。 */
     public final boolean wifi;
+    /** 用于绑定 socket 的 WLAN 网络；没有 WLAN 时为 null。 */
+    public final Network wifiNetwork;
+    /** 本机 IPv4（优先取 WLAN 的地址）。 */
     public final String ipv4;
     public final String gateway;
 
-    private NetInfo(boolean wifi, String ipv4, String gateway) {
+    private NetInfo(boolean wifi, Network wifiNetwork, String ipv4, String gateway) {
         this.wifi = wifi;
+        this.wifiNetwork = wifiNetwork;
         this.ipv4 = ipv4;
         this.gateway = gateway;
     }
@@ -33,31 +38,24 @@ public final class NetInfo {
     public static NetInfo read(Context ctx) {
         ConnectivityManager cm = (ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
         if (cm == null) {
-            return new NetInfo(false, null, null);
+            return new NetInfo(false, null, null, null);
         }
-        Network target = null;
+        Network wifiNet = null;
         for (Network n : cm.getAllNetworks()) {
             NetworkCapabilities caps = cm.getNetworkCapabilities(n);
             if (caps == null || !caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
                 continue;
             }
-            if (!caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                    && !caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)) {
-                continue;
-            }
-            target = n;
+            wifiNet = n;
             break;
         }
-        boolean wifi = target != null;
+        Network target = wifiNet != null ? wifiNet : cm.getActiveNetwork();
         if (target == null) {
-            target = cm.getActiveNetwork();
-        }
-        if (target == null) {
-            return new NetInfo(false, null, null);
+            return new NetInfo(false, null, null, null);
         }
         LinkProperties lp = cm.getLinkProperties(target);
         if (lp == null) {
-            return new NetInfo(wifi, null, null);
+            return new NetInfo(wifiNet != null, wifiNet, null, null);
         }
         String ip = null;
         String gw = null;
@@ -75,6 +73,6 @@ public final class NetInfo {
                 break;
             }
         }
-        return new NetInfo(wifi, ip, gw);
+        return new NetInfo(wifiNet != null, wifiNet, ip, gw);
     }
 }

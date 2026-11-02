@@ -6,6 +6,12 @@
     <!-- 读取当前网络（WiFi 的 IPv4 / 网关） -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <!-- 读当前连接的 Wi-Fi 名称：Android 13+ 用 NEARBY_WIFI_DEVICES，
+         neverForLocation 表示不借此推断位置，所以不需要定位权限 -->
+    <uses-permission
+        android:name="android.permission.NEARBY_WIFI_DEVICES"
+        android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <!-- 后台保活：前台服务 + 常驻通知 -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />

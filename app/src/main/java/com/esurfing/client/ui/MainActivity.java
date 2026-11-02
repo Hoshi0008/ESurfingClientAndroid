@@ -23,6 +23,7 @@ import android.widget.FrameLayout;
 import com.esurfing.client.App;
 import com.esurfing.client.R;
 import com.esurfing.client.service.ServiceState;
+import com.esurfing.client.service.WifiNames;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,6 +44,7 @@ public class MainActivity extends Activity {
 
     private static final int REQ_NOTIF = 11;
     private static final int REQ_EXPORT = 12;
+    private static final int REQ_WIFI_NAME = 13;
 
     /** 覆盖层：能被返回键关掉的东西（弹窗、下拉菜单）。 */
     public interface Overlay {
@@ -67,6 +69,7 @@ public class MainActivity extends Activity {
     private Runnable pendingAfterNotif;
     private byte[] pendingExport;
     private View toastView;
+    private boolean wifiNameAsked;
 
     private final ServiceState.Listener stateListener = () -> handler.post(() -> {
         if (pages[PAGE_MAIN] instanceof MainPage) {
@@ -185,6 +188,39 @@ public class MainActivity extends Activity {
         }
         ((MainPage) pages[PAGE_MAIN]).refresh();
         maybeOpenEiaPortal();
+        requestWifiNamePermission(false);
+    }
+
+    /**
+     * 读 Wi-Fi 名称需要权限：Android 13+ 是 NEARBY_WIFI_DEVICES，但实测不少 ROM
+     * 还要 ACCESS_FINE_LOCATION 才不给 SSID 打码，所以两个一起要；被拒了界面会退化成
+     * 「WiFi 已连接」，点一下 WiFi 标签可以再问一次。
+     */
+    public void requestWifiNamePermission(boolean userTriggered) {
+        if (userTriggered) {
+            wifiNameAsked = false;
+        }
+        if (wifiNameAsked) {
+            return;
+        }
+        java.util.List<String> need = new java.util.ArrayList<String>();
+        if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            need.add(android.Manifest.permission.ACCESS_FINE_LOCATION);
+        }
+        if (WifiNames.PERMISSION != null
+                && checkSelfPermission(WifiNames.PERMISSION) != PackageManager.PERMISSION_GRANTED) {
+            need.add(WifiNames.PERMISSION);
+        }
+        if (need.isEmpty()) {
+            return;
+        }
+        wifiNameAsked = true;
+        try {
+            requestPermissions(need.toArray(new String[0]), REQ_WIFI_NAME);
+        } catch (RuntimeException ignored) {
+            // 个别 ROM 不支持，界面会退化成「WiFi 已连接」
+        }
     }
 
     @Override
@@ -353,6 +389,11 @@ public class MainActivity extends Activity {
             pendingAfterNotif = null;
             if (r != null) {
                 r.run();
+            }
+        } else if (requestCode == REQ_WIFI_NAME) {
+            // 授权后立刻把 Wi-Fi 名字显示出来
+            if (pages[PAGE_MAIN] instanceof MainPage) {
+                ((MainPage) pages[PAGE_MAIN]).refresh();
             }
         }
     }

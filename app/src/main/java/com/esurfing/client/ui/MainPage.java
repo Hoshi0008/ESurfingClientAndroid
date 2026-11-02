@@ -22,6 +22,7 @@ import com.esurfing.client.core.Config;
 import com.esurfing.client.service.AuthService;
 import com.esurfing.client.service.NetInfo;
 import com.esurfing.client.service.ServiceState;
+import com.esurfing.client.service.WifiNames;
 
 import java.util.Locale;
 
@@ -61,6 +62,18 @@ public final class MainPage implements Page {
             }
             updateElapsed();
             act.handler.postDelayed(this, 1000);
+        }
+    };
+
+    /** WiFi 名称会换（切网络），页面可见时每 8 秒刷一次。 */
+    private final Runnable chipTicker = new Runnable() {
+        @Override
+        public void run() {
+            if (!visible) {
+                return;
+            }
+            updateChip(App.get().config());
+            act.handler.postDelayed(this, 8000);
         }
     };
 
@@ -116,6 +129,11 @@ public final class MainPage implements Page {
         chip = Ui.text(act, "WiFi", 11.5f, t.chipTxt, true);
         chip.setBackground(Ui.round(act, t.chipBg, 999, 0, 0));
         chip.setPadding(Ui.dp(act, 12), Ui.dp(act, 6), Ui.dp(act, 12), Ui.dp(act, 6));
+        chip.setSingleLine(true);
+        chip.setEllipsize(TextUtils.TruncateAt.END);
+        chip.setMaxWidth(Ui.dp(act, 160));
+        // 没授权时点一下可以再申请一次（拿到权限就能显示真实 SSID）
+        chip.setOnClickListener(v -> act.requestWifiNamePermission(true));
         head.addView(chip);
         col.addView(head, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -170,11 +188,14 @@ public final class MainPage implements Page {
     public void onShow() {
         visible = true;
         refresh();
+        act.handler.removeCallbacks(chipTicker);
+        act.handler.postDelayed(chipTicker, 8000);
     }
 
     @Override
     public void onHide() {
         visible = false;
+        act.handler.removeCallbacks(chipTicker);
         syncTicker();
     }
 
@@ -199,19 +220,18 @@ public final class MainPage implements Page {
     }
 
     private void updateChip(Config c) {
-        String ssid = c.get("ssid").trim();
-        if (!ssid.isEmpty()) {
-            chip.setText(ssid);
+        NetInfo net = NetInfo.read(act);
+        if (!net.wifi) {
+            chip.setText("未连接 WiFi");
             return;
         }
-        NetInfo net = NetInfo.read(act);
-        if (net.wifi) {
-            chip.setText("WiFi 已连接");
-        } else if (net.ipv4 != null) {
-            chip.setText("已联网");
-        } else {
-            chip.setText("无网络");
+        String ssid = WifiNames.currentSsid(act);
+        if (ssid == null) {
+            // 没拿到 SSID（未授权 / 系统限制）时退化显示，配置里记过的名字优先
+            String cfgSsid = c.get("ssid").trim();
+            ssid = cfgSsid.isEmpty() ? "WiFi 已连接" : cfgSsid;
         }
+        chip.setText(ssid);
     }
 
     private void rebuildStatus(Config c, boolean ready, boolean running) {

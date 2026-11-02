@@ -53,16 +53,29 @@ final class Http {
     }
 
     static Response get(String url, Map<String, String> headers, String localIp) throws IOException {
-        return request("GET", url, null, headers, localIp, DEFAULT_TIMEOUT);
+        return request("GET", url, null, headers, localIp, DEFAULT_TIMEOUT, null);
     }
 
     static Response post(String url, byte[] body, Map<String, String> headers,
                          String localIp, int timeoutMs) throws IOException {
-        return request("POST", url, body, headers, localIp, timeoutMs);
+        return request("POST", url, body, headers, localIp, timeoutMs, null);
+    }
+
+    static Response post(String url, byte[] body, Map<String, String> headers,
+                         String localIp, int timeoutMs, SocketBinder binder) throws IOException {
+        return request("POST", url, body, headers, localIp, timeoutMs, binder);
     }
 
     static Response request(String method, String url, byte[] body, Map<String, String> extraHeaders,
                             String localIp, int timeoutMs) throws IOException {
+        return request(method, url, body, extraHeaders, localIp, timeoutMs, null);
+    }
+
+    /**
+     * @param binder 把 socket 固定到指定网络（WLAN）；为 null 时退化为绑定本机地址
+     */
+    static Response request(String method, String url, byte[] body, Map<String, String> extraHeaders,
+                            String localIp, int timeoutMs, SocketBinder binder) throws IOException {
         if (url == null || !url.regionMatches(true, 0, "http://", 0, 7)) {
             throw new IOException("只支持 http:// 地址: " + url);
         }
@@ -94,7 +107,17 @@ final class Http {
         Socket socket = new Socket();
         try {
             boolean loopback = host.startsWith("127.") || "localhost".equalsIgnoreCase(host);
-            if (!loopback && localIp != null && !localIp.trim().isEmpty()) {
+            if (!loopback && binder != null) {
+                try {
+                    // 固定走 WLAN：即使移动数据是默认网络，探测也不会跑到流量上
+                    binder.bind(socket);
+                } catch (IOException bindNetworkFailed) {
+                    Log log = Log.current();
+                    if (log != null) {
+                        log.warn("绑定 WLAN 网络失败: " + bindNetworkFailed.getMessage());
+                    }
+                }
+            } else if (!loopback && localIp != null && !localIp.trim().isEmpty()) {
                 try {
                     socket.bind(new InetSocketAddress(localIp.trim(), 0));
                 } catch (IOException bindFailed) {

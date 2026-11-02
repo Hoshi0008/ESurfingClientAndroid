@@ -317,9 +317,17 @@ public class AuthService extends Service {
         }
         NetInfo net = NetInfo.read(this);
         ServiceState.ip = net.ipv4 == null ? "" : net.ipv4;
+        if (!net.wifi || net.wifiNetwork == null) {
+            ServiceState.ip = "";
+            ServiceState.publish();
+            setPhase("等待连接 WLAN");
+            logStep("当前没有连接 WLAN：认证与外网连通测试都只走 WLAN（不走移动数据），15 秒后重试");
+            sleepSeconds(15);
+            return;
+        }
         if (net.ipv4 == null) {
             setPhase("等待校园网地址");
-            logStep("没有可用的 IPv4（未连接 WiFi？）10 秒后重试");
+            logStep("WLAN 还没有拿到 IPv4 地址，10 秒后重试");
             sleepSeconds(10);
             return;
         }
@@ -348,8 +356,12 @@ public class AuthService extends Service {
                 cfg.get("schoolid"), cfg.get("domain"), cfg.get("area"),
                 cfg.intOf("port", 7001));
         p.localIp(net.ipv4);
+        // 所有 socket 固定绑到 WLAN，避免外网探测/认证跑到移动数据上
+        p.setSocketBinder(net.wifiNetwork::bindSocket);
+        String ssid = WifiNames.currentSsid(this);
         logStep("本机地址 " + net.ipv4 + "  网关 " + (net.gateway == null ? "-" : net.gateway)
-                + "  通道 " + cfg.get("channel", "android"));
+                + "  通道 " + cfg.get("channel", "android")
+                + (ssid == null ? "" : "  WiFi " + ssid));
 
         int netCheck = cfg.intOf("net_check", 300);
         if (!force) {
