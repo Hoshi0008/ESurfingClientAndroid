@@ -201,12 +201,20 @@ adb reverse tcp:7001 tcp:7001 && adb reverse tcp:7002 tcp:7002
 
 | 指标 | 数值 |
 | --- | --- |
-| release APK | **110 KB** |
-| 其中 classes.dex | ≈ 80 KB |
-| 冷启动（本机 SwiftShader 模拟器） | 1.35 ~ 1.7 s |
-| App 侧初始化 | 一个 Activity + 一次布局构建，无第三方 SDK |
+| release APK | **111 KB**（113 848 字节） |
+| 其中 `classes.dex` | ≈ 80 KB |
+| 冷启动：进程启动 → `onCreate` 结束 | **340 ~ 450 ms** |
+| 冷启动：系统 `Displayed` | 1.4 ~ 1.8 s（本机 SwiftShader 软件渲染模拟器） |
 
-> 模拟器是纯软件渲染，光是第一帧的渐变/模糊着色器就要几百毫秒；真机（尤其 Android 12+ 硬件加速）会快得多。
+日志里带 `cold start: ...` 的埋点可以随时复核：
+
+```
+I/ESurfing: App.onCreate 开始 +115ms, 完成 +117ms
+I/ESurfing: cold start: onCreate 完成，进程启动后 369ms
+```
+
+`onCreate` 之后剩下的 1 秒多都花在模拟器的**第一帧软件渲染**上（渐变 / 模糊着色器要在 CPU 上编译）；
+真机有硬件加速，这部分通常只有几十毫秒。App 侧没有任何 SDK 初始化、没有线上请求、没有 XML 布局解析。
 
 ## 八、后台保活说明
 

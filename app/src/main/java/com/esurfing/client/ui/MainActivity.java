@@ -128,6 +128,9 @@ public class MainActivity extends Activity {
         });
 
         select(PAGE_MAIN, false);
+        // 冷启动自检：进程启动 → 界面搭好用了多少毫秒（日志里可见，便于排查性能回归）
+        long since = android.os.SystemClock.uptimeMillis() - android.os.Process.getStartUptimeMillis();
+        android.util.Log.i("ESurfing", "cold start: onCreate 完成，进程启动后 " + since + "ms");
     }
 
     private boolean barAppearanceApplied;

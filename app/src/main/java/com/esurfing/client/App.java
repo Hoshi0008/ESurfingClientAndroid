@@ -33,6 +33,8 @@ public class App extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        long t0 = android.os.SystemClock.uptimeMillis()
+                - android.os.Process.getStartUptimeMillis();
         sInstance = this;
         logDir = new File(getFilesDir(), "logs");
         configFile = new File(getFilesDir(), "esurfing.conf");
@@ -43,6 +45,9 @@ public class App extends Application {
         createChannel();
         // JobScheduler 是 binder 调用，放到后台线程，别拖慢冷启动
         new Thread(() -> KeepAliveJobService.schedule(App.this), "keepalive-schedule").start();
+        android.util.Log.i("ESurfing", "App.onCreate 开始 +" + t0 + "ms, 完成 +"
+                + (android.os.SystemClock.uptimeMillis()
+                - android.os.Process.getStartUptimeMillis()) + "ms");
     }
 
     public static App get() {
