@@ -463,10 +463,17 @@ public final class MainPage implements Page {
         addRow(infoCard, "认证服务器", server, true, t.txt, null);
         if (running) {
             String phase = TextUtils.isEmpty(ServiceState.phase) ? "运行中" : ServiceState.phase;
-            addRow(infoCard, "当前状态", phase, false, t.green, null);
+            // 失败/异常类文案标红，正常状态绿色，进行中用强调色
+            addRow(infoCard, "当前状态", phase, false, Ui.phaseColor(t, phase), null);
         } else {
             String user = c.get("user").trim();
             addRow(infoCard, "账号", user.isEmpty() ? "—" : user, false, t.txt, null);
+        }
+        // 需要门户认证时，给一个能点的入口（自动弹浏览器可能被用户关掉/错过）
+        String portal = ServiceState.portalUrl;
+        if (!TextUtils.isEmpty(portal)) {
+            addRow(infoCard, "认证门户", "点此打开 ›", false, t.accent1,
+                    () -> act.openInBrowser(portal));
         }
     }
 

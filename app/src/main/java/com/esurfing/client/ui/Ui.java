@@ -110,8 +110,7 @@ public final class Ui {
     }
 
     /** 把秒格式化成 hh:mm:ss（服务启动时间）。 */
-    public static String hms(long epochMillis) {
-        java.util.Calendar cal = java.util.Calendar.getInstance();
+    public static String hms(long epochMillis) {        java.util.Calendar cal = java.util.Calendar.getInstance();
         cal.setTimeInMillis(epochMillis);
         return String.format(Locale.US, "%02d:%02d:%02d",
                 cal.get(java.util.Calendar.HOUR_OF_DAY),
@@ -128,6 +127,41 @@ public final class Ui {
             return String.format(Locale.US, "%.1f KB", bytes / 1024.0);
         }
         return String.format(Locale.US, "%.1f MB", bytes / 1048576.0);
+    }
+
+    /** 失败/异常类的状态文案（用红色显示）。 */
+    public static boolean isNegativePhase(String phase) {
+        if (phase == null) {
+            return false;
+        }
+        return phase.contains("失败") || phase.contains("被拒") || phase.contains("异常")
+                || phase.contains("失效") || phase.contains("错误") || phase.contains("不可用")
+                || phase.contains("缺少") || phase.contains("超时") || phase.contains("未配置")
+                || phase.contains("不在天翼网段") || phase.contains("需要门户认证")
+                || phase.contains("需要 eIA");
+    }
+
+    /** 正常状态文案（用绿色显示）。 */
+    public static boolean isPositivePhase(String phase) {
+        if (phase == null) {
+            return false;
+        }
+        return phase.contains("已在线") || phase.contains("网络已在线")
+                || phase.contains("运行中");
+    }
+
+    /** 状态文案 → 颜色：负面红色、正常绿色、进行中/等待用强调色。 */
+    public static int phaseColor(Theme t, String phase) {
+        if (phase == null || phase.isEmpty()) {
+            return t.green;
+        }
+        if (isNegativePhase(phase)) {
+            return t.red;
+        }
+        if (isPositivePhase(phase)) {
+            return t.green;
+        }
+        return t.accent1;
     }
 
     /** 按触摸状态给按钮做轻微缩放，点击更有质感。 */

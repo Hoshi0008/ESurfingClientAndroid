@@ -336,21 +336,27 @@ public class AuthService extends Service {
         String campus = cfg.get("campus_net").trim();
         if (!campus.isEmpty() && !IpUtil.anyCidrContains(campus, net.ipv4) && !force) {
             logWarn(net.ipv4 + " 不在天翼网段 " + campus + "，跳过认证");
-            String eia = cfg.get("eia_net").trim();
-            if (!eia.isEmpty() && IpUtil.anyCidrContains(eia, net.ipv4)) {
-                String portalUrl = cfg.get("eia_portal").trim();
+            boolean inEia = inEiaNet(cfg, net);
+            if (inEia) {
                 logWarn("这是学校 eIA 准入网：本机 MAC 还没登记");
-                logWarn("用浏览器打开 " + (portalUrl.isEmpty() ? "准入门户" : portalUrl)
-                        + "（必须 http://）用学号+密码登录一次，再回来认证");
+                offerPortal(cfg, net, "", true, "需要用浏览器完成首次认证");
             }
-            setPhase("不在天翼网段");
+            setPhase(inEia ? "需要门户认证" : "不在天翼网段");
             sleepSeconds(30);
             return;
         }
 
         String mac = cfg.get("mac").trim();
         if (!IpUtil.isMac(mac)) {
-            mac = IpUtil.randomMac();
+            // 默认上报本机 MAC；系统不给读（Android 6+ 常见）时退化成固定随机 MAC
+            String localMac = WifiNames.localMac(this);
+            if (IpUtil.isMac(localMac)) {
+                mac = localMac;
+                logStep("上报本机 MAC " + mac);
+            } else {
+                mac = com.esurfing.client.AppPrefs.stableMac(this);
+                logStep("系统不提供本机 MAC，改用固定的随机 MAC " + mac);
+            }
         }
         Portal p = new Portal(net.ipv4, mac, cfg.get("channel", "android"),
                 cfg.get("schoolid"), cfg.get("domain"), cfg.get("area"),
@@ -393,6 +399,9 @@ public class AuthService extends Service {
             if (!p.lastRedirect().isEmpty()) {
                 logWarn("跳转到了 " + p.lastRedirect());
             }
+            // 探测不到 BRAS 门户，多半就是被学校的准入门户挡住了：直接把门户交给浏览器
+            boolean inEia = inEiaNet(cfg, net);
+            offerPortal(cfg, net, p.lastRedirect(), inEia, "认证门户探测失败，需要先在门户里完成认证");
             setPhase("探测门户失败");
             sleepSeconds(30);
             return;
@@ -447,7 +456,6 @@ public class AuthService extends Service {
     private void checkReachability(Portal p, NetInfo net) {
         Config cfg = config;
         String eiaNet = cfg.get("eia_net").trim();
-        String portalUrl = cfg.get("eia_portal").trim();
         boolean inEia = !eiaNet.isEmpty() && net.ipv4 != null
                 && IpUtil.anyCidrContains(eiaNet, net.ipv4);
 
@@ -492,17 +500,41 @@ public class AuthService extends Service {
         if (inEia) {
             logWarn("本机地址 " + net.ipv4 + " 落在 eIA 准入网段 " + eiaNet);
         }
-        if (portalUrl.isEmpty()) {
-            portalUrl = redirect;
+        offerPortal(cfg, net, redirect, inEia, "需要用浏览器完成首次认证");
+    }
+
+    /** 当前地址是否落在配置的 eIA 准入网段。 */
+    private boolean inEiaNet(Config cfg, NetInfo net) {
+        String eiaNet = cfg.get("eia_net").trim();
+        return !eiaNet.isEmpty() && net.ipv4 != null && IpUtil.anyCidrContains(eiaNet, net.ipv4);
+    }
+
+    /**
+     * 「需要用户去浏览器里完成认证」时统一走这里：挑一个最靠谱的门户地址发布给界面，
+     * 由界面用默认浏览器打开。
+     *
+     * <p>优先级：配置里的 {@code eia_portal} → 探测到的门户跳转 → 网关首页（只在确认
+     * 是 eIA 时猜这一手）。同一个地址只发布一次，避免每 30 秒重试都把浏览器弹一遍。</p>
+     */
+    private void offerPortal(Config cfg, NetInfo net, String candidate, boolean inEia, String reason) {
+        String url = cfg.get("eia_portal").trim();
+        if (url.isEmpty() && candidate != null && !candidate.trim().isEmpty()
+                && Portal.looksLikePortal(candidate)) {
+            url = candidate.trim();
         }
-        if (portalUrl.isEmpty()) {
-            logWarn("判定为需要门户认证，但拿不到门户地址：请在设置里填写 eia_portal");
+        if (url.isEmpty() && inEia && net.gateway != null && !net.gateway.isEmpty()) {
+            // eIA 的门户大多挂在网关上，猜一个总比什么都不给强
+            url = "http://" + net.gateway + "/";
+        }
+        if (url.isEmpty()) {
+            logWarn(reason + "，但拿不到门户地址：请在设置里填写 eia_portal");
             setPhase("需要门户认证");
             return;
         }
-        logWarn("需要用浏览器完成首次认证，尝试用默认浏览器打开：" + portalUrl);
+        logWarn(reason);
+        logWarn("尝试用默认浏览器打开：" + url);
         setPhase("需要门户认证");
-        ServiceState.setPortal(portalUrl);
+        ServiceState.setPortal(url);
     }
 
     private void keepLoop(Portal p, int netCheck) {

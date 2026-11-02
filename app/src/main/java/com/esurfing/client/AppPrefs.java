@@ -19,6 +19,7 @@ public final class AppPrefs {
     private static final String KEY_THEME = "theme";
     private static final String KEY_AUTO_START = "auto_start";
     private static final String KEY_MIGRATED = "migrated_from_conf";
+    private static final String KEY_STABLE_MAC = "stable_mac";
 
     public static final String THEME_AUTO = "auto";
     public static final String THEME_LIGHT = "light";
@@ -47,6 +48,20 @@ public final class AppPrefs {
 
     public static void setAutoStart(Context c, boolean value) {
         sp(c).edit().putBoolean(KEY_AUTO_START, value).apply();
+    }
+
+    /**
+     * 读不到本机 MAC 时用的固定随机 MAC：只生成一次，之后每次上报都用它，
+     * 避免每个会话换一个 MAC 导致服务端会话错乱。
+     */
+    public static String stableMac(Context c) {
+        SharedPreferences p = sp(c);
+        String mac = p.getString(KEY_STABLE_MAC, "");
+        if (mac == null || !com.esurfing.client.core.IpUtil.isMac(mac)) {
+            mac = com.esurfing.client.core.IpUtil.randomMac();
+            p.edit().putString(KEY_STABLE_MAC, mac).apply();
+        }
+        return mac;
     }
 
     /**

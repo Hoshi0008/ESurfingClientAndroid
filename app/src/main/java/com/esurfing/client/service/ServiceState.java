@@ -45,6 +45,10 @@ public final class ServiceState {
         if (url == null || url.isEmpty()) {
             return;
         }
+        // 同一个地址只发布一次：服务每 30 秒重试一次，不能每次都把浏览器弹起来
+        if (url.equals(portalUrl)) {
+            return;
+        }
         portalUrl = url;
         portalAt = System.currentTimeMillis();
         publish();

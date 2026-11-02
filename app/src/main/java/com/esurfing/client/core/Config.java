@@ -172,7 +172,7 @@ public final class Config {
         SCHEMA.add(new Field("net_check", "外网校验", "300", "单位秒；0 = 关闭"));
         SCHEMA.add(new Field("force", "强制认证", "false", "探测到已在线也重新认证",
                 "false", "true").labels("关闭", "开启"));
-        SCHEMA.add(new Field("mac", "上报MAC", "", "留空则每次随机生成（服务端不校验真伪）"));
+        SCHEMA.add(new Field("mac", "上报MAC", "", "留空则上报本机 MAC（读不到时用固定的随机 MAC）"));
         SCHEMA.add(new Field("ssid", "校园WiFi", "", "仅作记录，便于确认连的是哪张网"));
     }
 
