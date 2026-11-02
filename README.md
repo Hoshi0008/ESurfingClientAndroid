@@ -21,9 +21,9 @@
 | --- | --- |
 | ![日志](docs/shots/log-live.png) | ![设置](docs/shots/settings.png) |
 
-| 磨砂弹窗 + 高斯模糊 | 下拉菜单 | 常驻通知 |
+| 磨砂弹窗 + 高斯模糊 | 下拉菜单 | 打开日志（按启动时间命名） |
 | --- | --- | --- |
-| ![弹窗](docs/shots/dialog-edit.png) | ![菜单](docs/shots/dark-log-menu.png) | ![通知](docs/shots/notification.png) |
+| ![弹窗](docs/shots/dialog-edit.png) | ![菜单](docs/shots/dark-log-menu.png) | ![打开日志](docs/shots/log-picker.png) |
 
 ---
 
@@ -196,6 +196,11 @@ adb reverse tcp:7001 tcp:7001 && adb reverse tcp:7002 tcp:7002
 - [x] 保活：`dumpsys activity services` 显示 `isForeground=true`；应用更新（MY_PACKAGE_REPLACED）后自动重启服务
 - [x] 电池优化：点「点此授权」→ 拉起系统 `RequestIgnoreBatteryOptimizations`
 - [x] 停止服务：向 BRAS 发 `term.cgi`，界面回到红色「未启动服务」
+- [x] 长跑：登录后 60 秒首次心跳、随后按服务端 `interval=300` 续约，4 分钟内无多余重认证；
+      `adb shell am force-stop` 杀掉进程后，看门狗/开机广播能把服务重新拉起并自动完成认证
+
+> mock 服务端的访问日志里可以逐条核对：`index.cgi → ticket.cgi(ZSM) → ticket.cgi → auth.cgi → keep.cgi → …`，
+> 只有主动停止/重启时才会看到 `term.cgi`。
 
 ### 4. 体积与启动
 
