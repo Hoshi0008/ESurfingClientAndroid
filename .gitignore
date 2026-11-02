@@ -1,0 +1,11 @@
+﻿# 构建
+/build/
+/app/build/
+/tools/devtest/out/
+/app/src/main/java/com/esurfing/client/core/Algos.java.bak
+# 本地测试产物
+*.apk
+*.keystore
+*.jks
+local.properties
+.secrets/
